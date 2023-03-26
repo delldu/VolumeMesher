@@ -251,9 +251,9 @@ public:
 
   // setLabelOrder(false) sets the order to be not random; setLabelOrder(true)
   //	sets the order to random. By default, the labels are visited in
-  //non-random order 	for both the swap and alpha-expansion moves 	Note that
-  //srand() must be initialized with an appropriate seed in order for 	random
-  //order to take effect!
+  // non-random order 	for both the swap and alpha-expansion moves 	Note
+  // that srand() must be initialized with an appropriate seed in order for
+  // random order to take effect!
   void setLabelOrder(bool isRandom);
   void setLabelOrder(const LabelID *order, LabelID size);
 

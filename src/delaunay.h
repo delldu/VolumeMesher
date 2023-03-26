@@ -78,9 +78,6 @@ public:
   // Create a Delaunay tetrahedrization by incremental insertion
   void tetrahedrize();
 
-  // Save the mesh to a .tet file
-  void saveTET(const char *filename);
-
   // Return an array containing incident tetrahedra at a given vertex v.
   // Store the array length in numtets
   uint64_t *incident_tetrahedra(const uint32_t v, uint64_t *numtets);

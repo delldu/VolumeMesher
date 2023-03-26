@@ -15,7 +15,7 @@
 // GREY -> partially or uncertain 2D-intersection with constraints.
 // BLACK_A -> fully contained in one constraint of input A.
 // BLACK_B -> fully contained in one constraint of input B. (two input case)
-// BLACK_B -> fully contained in one constraint of both input. (two input case)
+// BLACK_AB -> fully contained in one constraint of both input. (two input case)
 #define WHITE 0
 #define BLACK_A 1
 #define BLACK_B 2
@@ -212,10 +212,6 @@ public:
   void saveSkin(const char *filename, const char bool_opcode,
                 bool triangulate = false);
 
-  // Save the mesh
-  void saveMesh(const char *filename, const char bool_opcode,
-                bool tetrahedrize = false);
-
   // Makes a triangle mesh out of the skin faces
   void extractSkinTriMesh(const char *filename, const char bool_opcode,
                           double **coords, uint32_t *npts, uint32_t **tri_idx,
@@ -340,28 +336,22 @@ public:
 /// Input may be made of either one or two models to be combined into a boolean
 /// composition
 /// </summary>
-/// <param name="fileA_name">Name of first model</param>
 /// <param name="coords_A">Serialized coordinates of first model
 /// vertices</param> <param name="npts_A">Number of first model vertices</param>
 /// <param name="tri_idx_A">Serialized indexes of first model triangles</param>
 /// <param name="ntri_A">Number of first model triangles</param>
-/// <param name="fileB_name">Name of second model</param>
 /// <param name="coords_B">Serialized coordinates of second model
 /// vertices</param> <param name="npts_B">Number of second model
 /// vertices</param> <param name="tri_idx_B">Serialized indexes of second model
 /// triangles</param> <param name="ntri_B">Number of second model
 /// triangles</param> <param name="bool_opcode">Boolean operation (0 = no op, U
 /// = union, D = difference, I = intersection</param> <param
-/// name="free_mem">Input models memory is released</param> <param
 /// name="verbose">Print useful info during the process</param> <param
-/// name="logging">Append info to mesh_generator.log</param> <returns>The
 /// resulting BSPcomplex structure</returns>
-BSPcomplex *makePolyhedralMesh(const char *fileA_name, double *coords_A,
-                               uint32_t npts_A, uint32_t *tri_idx_A,
-                               uint32_t ntri_A, const char *fileB_name = NULL,
+BSPcomplex *makePolyhedralMesh(double *coords_A, uint32_t npts_A,
+                               uint32_t *tri_idx_A, uint32_t ntri_A,
                                double *coords_B = NULL, uint32_t npts_B = 0,
                                uint32_t *tri_idx_B = NULL, uint32_t ntri_B = 0,
-                               char bool_opcode = '0', bool free_mem = false,
-                               bool verbose = false, bool logging = false);
+                               char bool_opcode = '0', bool verbose = false);
 
 #endif /* BSP_h */

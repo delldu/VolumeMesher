@@ -36,8 +36,8 @@
 
         ///////////////////////////////////////////////////
 
-        #include <stdio.h>
         #include "energy.h"
+        #include <stdio.h>
 
         void main()
         {

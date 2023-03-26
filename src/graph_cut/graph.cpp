@@ -18,7 +18,7 @@ Graph<captype, tcaptype, flowtype>::Graph(int node_num_max, int edge_num_max,
   arcs = (arc *)malloc(2 * edge_num_max * sizeof(arc));
   if (!nodes || !arcs) {
     if (error_function)
-      (*error_function)("Not enough memory!");
+      (*error_function)((char *)"Not enough memory!");
     exit(1);
   }
 
@@ -67,7 +67,7 @@ void Graph<captype, tcaptype, flowtype>::reallocate_nodes(int num) {
   nodes = (node *)realloc(nodes_old, node_num_max * sizeof(node));
   if (!nodes) {
     if (error_function)
-      (*error_function)("Not enough memory!");
+      (*error_function)((char *)"Not enough memory!");
     exit(1);
   }
 
@@ -95,7 +95,7 @@ void Graph<captype, tcaptype, flowtype>::reallocate_arcs() {
   arcs = (arc *)realloc(arcs_old, arc_num_max * sizeof(arc));
   if (!arcs) {
     if (error_function)
-      (*error_function)("Not enough memory!");
+      (*error_function)((char *)"Not enough memory!");
     exit(1);
   }
 

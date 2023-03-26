@@ -476,59 +476,6 @@ void opposite_side_vertices(const TetMesh *mesh, uint64_t tet_ind,
     ptr[j++] = v;
 }
 
-//  Input: tetrahedron (tet) index: tet_ind,
-//         endpoints of a segment: edge=(e0,e1),
-//         pointer to vertex index type: n_ret_vrts,
-//         pointer to vertex index type: ptr,
-//         pointer to mesh.
-// Output: by using ptr returns the list of the vertices of tet
-//         that belongs to the closure of edge (at most 2),
-//         by using n_ret_vrts returns the number of the vertices of tet
-//         that belongs to the closure of edge.
-void TetVrts_InSegment(uint64_t tet_ind, const uint32_t *edge,
-                       uint32_t *n_ret_vrts, uint32_t *ptr,
-                       const TetMesh *mesh) {
-
-  uint32_t n_found = 0, found[2];
-  uint32_t tet_vrts[4];
-  extract_tetVrts(tet_vrts, tet_ind, mesh);
-
-  // Check if one of tet vertices is an endpoint of edge.
-  if (arrayUINT32_contains_elem(tet_vrts, 4, edge[0]))
-    found[n_found++] = edge[0];
-  if (arrayUINT32_contains_elem(tet_vrts, 4, edge[1]))
-    found[n_found++] = edge[1];
-
-  if (n_found < 2) {
-    // Check if one of tet vertices is inside the edge.
-    uint32_t j_start = 0;
-
-    if (n_found == 0)
-      for (uint32_t i = 0; i < 4; i++)
-        if (vrt_pointInInnerSegment(tet_vrts[i], edge[0], edge[1], mesh)) {
-          found[n_found++] = tet_vrts[i];
-          j_start = i + 1;
-          break;
-        }
-
-    if (n_found == 1)
-      for (uint32_t j = j_start; j < 4; j++)
-        if (vrt_pointInInnerSegment(tet_vrts[j], edge[0], edge[1], mesh)) {
-          found[n_found++] = tet_vrts[j];
-          break;
-        }
-  }
-
-  // Returns:
-  *n_ret_vrts = n_found;
-  if (n_found == 0)
-    return;
-  // Here one vertex has been found for shure.
-  ptr[0] = found[0];
-  if (n_found == 2)
-    ptr[1] = found[1];
-}
-
 //------------------
 // ARRAY COMPOSITION
 //------------------

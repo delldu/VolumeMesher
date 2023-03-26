@@ -54,12 +54,16 @@ uint32_t innerSegmentCrossesInnerTriangle(const double *u1, const double *u2,
 uint32_t innerSegmentCrossesTriangle(const double *u1, const double *u2,
                                      const double *v1, const double *v2,
                                      const double *v3);
-
+#if 0
 int triangles_overlap(const double *v11, const double *v12, const double *v13,
                       const double *v21, const double *v22, const double *v23);
+#endif
+
+#if 0
 int triangle_intersects_inner_tet(const double *v1, const double *v2,
                                   const double *v3, const double *t1,
                                   const double *t2, const double *t3,
                                   const double *t4);
+#endif
 
 #endif /* extended_predicates_h */

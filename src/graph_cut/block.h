@@ -131,7 +131,7 @@ public:
             (block *)new char[sizeof(block) + (block_size - 1) * sizeof(Type)];
         if (!next) {
           if (error_function)
-            (*error_function)("Not enough memory!");
+            (*error_function)((char *)"Not enough memory!");
           exit(1);
         }
         if (last)
@@ -242,7 +242,7 @@ public:
                                 (block_size - 1) * sizeof(block_item)];
       if (!first) {
         if (error_function)
-          (*error_function)("Not enough memory!");
+          (*error_function)((char *)"Not enough memory!");
         exit(1);
       }
       first_free = &(first->data[0]);

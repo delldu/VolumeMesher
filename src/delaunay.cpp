@@ -164,31 +164,6 @@ void TetMesh::tetrahedrize() {
     mark_tetrahedra[i] = 0;
 }
 
-void TetMesh::saveTET(const char *filename) {
-  ofstream f(filename);
-
-  if (!f)
-    ip_error("\nTetMesh::saveTET: FATAL ERROR cannot open the file.\n");
-
-  f << num_vertices << " vertices\n";
-
-  uint64_t ngnt = 0;
-  for (uint64_t i = 0; i < tet_num; i++)
-    if (tet_node[i * 4 + 3] != INFINITE_VERTEX)
-      ngnt++;
-
-  f << ngnt << " tets\n";
-  for (uint32_t i = 0; i < num_vertices; i++)
-    f << vertices[i].coord[0] << " " << vertices[i].coord[1] << " "
-      << vertices[i].coord[2] << "\n";
-  for (uint64_t i = 0; i < tet_num; i++)
-    if (tet_node[i * 4 + 3] != INFINITE_VERTEX)
-      f << "4 " << tet_node[i * 4] << " " << tet_node[i * 4 + 1] << " "
-        << tet_node[i * 4 + 2] << " " << tet_node[i * 4 + 3] << "\n";
-
-  f.close();
-}
-
 void TetMesh::removeDelTets() {
   uint64_t j;
   for (uint64_t i = 0; i < Del_num_deleted; i++) {

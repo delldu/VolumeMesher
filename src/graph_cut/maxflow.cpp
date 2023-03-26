@@ -446,12 +446,13 @@ Graph<captype, tcaptype, flowtype>::maxflow(bool reuse_trees,
   if (maxflow_iteration == 0 && reuse_trees) {
     if (error_function)
       (*error_function)(
-          "reuse_trees cannot be used in the first call to maxflow()!");
+          (char *)"reuse_trees cannot be used in the first call to maxflow()!");
     exit(1);
   }
   if (changed_list && !reuse_trees) {
     if (error_function)
-      (*error_function)("changed_list cannot be used without reuse_trees!");
+      (*error_function)(
+          (char *)"changed_list cannot be used without reuse_trees!");
     exit(1);
   }
 
