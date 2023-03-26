@@ -13,6 +13,8 @@ git clone --recursive https://github.com/MarcoAttene/VolumeMesher
 On Windows MSVC you may run ```GRSI_script.bat``` to automatically configure, compile and run the executable on two example models.
 On other systems you may build the executable as follows:
 ```
+find src/ -exec clang-format -i {} \;
+
 mkdir build
 cd build
 cmake ..

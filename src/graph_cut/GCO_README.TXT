@@ -1,12 +1,12 @@
  ##############################################################################
-#                                                                            #
-#    GCoptimization - software for energy minimization with graph cuts       #
-#                        Version 3.0                                         #
-#    http://www.csd.uwo.ca/faculty/olga/software.html                        #
-#                                                                            #
-#    Copyright 2007-2010 Olga Veksler  <olga@csd.uwo.ca>                     #
-#                        Andrew Delong <andrew.delong@gmail.com>             #
-#                                                                            #
+# #
+#GCoptimization - software for energy minimization with graph cuts #
+#Version 3.0 #
+#http: // www.csd.uwo.ca/faculty/olga/software.html                        #
+# #
+#Copyright 2007 - 2010 Olga Veksler < olga @csd.uwo.ca > #
+#Andrew Delong < andrew.delong @gmail.com > #
+# #
 ##############################################################################
 
   C++ requires at least Visual C++ 2005 (VC8) or GCC 4.03. Supports 32 or 64-bit.
@@ -152,34 +152,43 @@ the binary energy for the swap algorithm step is regular, using V. Kolmogorov's 
 4. Data Types
 
 typedef  <numeric type>  SiteID;          // index of a site (pixel); default is int32
-typedef  <numeric type>  LabelID;         // index of a label;        default is int32
-typedef  <numeric type>  EnergyType;      // total energy value;      default is int64
-typedef  <numeric type>  EnergyTermType;  // individual energy term;  default is int32
+ typedef<numeric type> LabelID;    // index of a label;        default is int32
+ typedef<numeric type> EnergyType; // total energy value;      default is int64
+ typedef<numeric type>
+     EnergyTermType; // individual energy term;  default is int32
 
-For efficiency it is best to use integral types when possible; be sure that they are
-large enough to avoid integer overflow. By default, the library will warn if energy 
-terms are dangerously large (larger than GCO_MAX_ENERGYTERM=10000000).
+ For efficiency it is best to use integral types when possible;
+ be sure that they are large enough to avoid integer overflow.By default,
+     the library will warn if energy terms are dangerously
+         large(larger than GCO_MAX_ENERGYTERM = 10000000)
+             .
 
-Keep in mind that float/double may cause expansion/swap to report small increase in energy, 
-due to arithmetic error during max-flow computation.
+         Keep in mind that float /
+         double may cause expansion / swap to report small increase in energy,
+     due to arithmetic error during max -
+         flow computation.
 
-###########################################################################
+         ########################################################################## #
 
-5. Specifying the energy
+         5. Specifying the energy
 
-Before optimizing the energy, one has to specify it, that is specify the number of
-labels, number of pixels, neighborhood system, the data terms, and the smoothness terms.
-There are 2  constructors to use, one in case of the grid graph, and another in case
-of a general graph.
-In all cases, it is assumed that the sites go between 0...num_sites-1, 
-and labels go between  0....num_labels-1.
-For a grid (4-connected) graph, site at coordinates (x,y) is numbered with x+y*width, where width
-is the width of the grid, that is the row-major ordering of arrays is assumed. 
-________________________________________________________________________________________________
+         Before optimizing the energy,
+     one has to specify it, that is specify the number of labels,
+     number of pixels, neighborhood system, the data terms,
+     and the smoothness terms.There are 2 constructors to use,
+     one in case of the grid graph,
+     and another in case of a general graph.In all cases,
+     it is assumed that the sites go between 0...num_sites - 1,
+     and labels go between 0....num_labels - 1. For a grid(4 - connected) graph,
+     site at coordinates(x, y) is numbered with x + y *width,
+     where width is the width of the grid,
+     that is the row -
+         major ordering of arrays is assumed
+             .________________________________________________________________________________________________
 
-Constructor A.
+         Constructor A.
 
-GCoptimizationGridGraph(int width, int height,int num_labels);
+         GCoptimizationGridGraph(int width, int height, int num_labels);
 
 Use this constructor only for grid of size width by height.  If you use this constructor, 
 4 connected grid neigbhorhood structure is assumed, so you don't need to specify neighborhood
@@ -190,19 +199,28 @@ Constructor B.
 
 GCoptimizationGeneralGraph(int num_sites,int num_labels);
 
+Use this constructor for general graphs.If you use this constructor,
+    you must setup up neighborhood system using function.You can either specify
+            neighbors individually or
+        all at once.
 
-Use this constructor for general graphs.  If you use this constructor, you must setup up
-neighborhood system using function. You can either specify neighbors individually or all at once.
+        i) setNeighbors(SiteID s1, SiteID s2, EnergyTermType weight = 1);
+Specifies neighbors individually
+    .You must call this function
+        exactly once for any pair of neighboring sites s1 and s2
+    .That is if you call setNeighbors(s1, s2)
+        then you should not call setNeighbors(s2, s1)
+    .If Vpq(l_p, l_q) = V(l_p, l_q) * w_pq,
+    where V(l_p, l_q) is some function that depends only on the labels l_p, l_q,
+    then specify w_pq by using : setNeighbors(p, q, w_pq)
+                                     .
 
-i) setNeighbors(SiteID s1, SiteID s2, EnergyTermType weight=1);
-Specifies neighbors individually. You must call this function exactly once  for any 
-pair of neighboring sites s1 and s2. That is if you call setNeighbors(s1,s2) then you should not call 
-setNeighbors(s2,s1).   If Vpq(l_p,l_q) = V(l_p,l_q)*w_pq, where V(l_p,l_q) is some function that
-depends only on the labels l_p,l_q, then specify w_pq by using: setNeighbors(p,q,w_pq). 
+                                 ii)
+    To pass in all neighbor information at once,
+    use function :
 
-ii) To pass in all neighbor information at once, use function:
-
-void setAllNeighbors(SiteID *numNeighbors,SiteID **neighborsIndexes,EnergyTermType **neighborsWeights);
+    void setAllNeighbors(SiteID *numNeighbors, SiteID **neighborsIndexes,
+                         EnergyTermType **neighborsWeights);
 Here:
     (a) numNeighbors is an array of size num_sites, and numNeighbors[i] is the number of neighbors for site i
 
@@ -234,7 +252,7 @@ The following functions can be called any time before or after expansion.
     dataArray[(x+y*width)*num_labels + l]. Thus the size of array dataArray is num_pixels*num_labels.
     Can call this function only one time. 
 
-(b) void setDataCost(DataCostFn fn); 
+(b) void setDataCost(DataCostFn fn);
     DataCostFn is a pointer to a function  f(Pixel p, Label l), s.t. the data cost for pixel p to have      
     label l  is given by f(p,l). Can call this function only one time.
 
@@ -242,21 +260,23 @@ The following functions can be called any time before or after expansion.
     DataCostFnExtra is a pointer to a function  f(SiteID p, LabelID l,void *extraData), s.t. the data 
     cost for pixel p to have label l  is given by f(p,l,extraData).  Can call this function only one time.
 
-(d) void setDataCost(SiteID s, LabelID l, EnergyTermType e); 
-    sets up D(s,l) = 3; You must call this function for each pixel and each label.
+(d) void setDataCost(SiteID s, LabelID l, EnergyTermType e);
+    sets up D(s, l) = 3; You must call this function for each pixel and each label.
 
 (e) void setDataCostFunctor(DataCostFunctor* f);
-    Experienced C++ users can subclass our DataCostFunctor base class to achieve
-    a similar functionality as (b) or (c) above. By overriding the compute() method 
-    of DataCostFunctor, your compute() method will be called by the GCoptimization
-    class each time a data penalty must be computed.
-         
-(f) struct SparseDataCost {
-        SiteID site;
-        EnergyTermType cost;
+    Experienced C++ users can subclass our DataCostFunctor base class to
+            achieve a similar functionality
+            as(b) or
+        (c) above.By overriding the compute() method of DataCostFunctor,
+        your compute() method will be called by the GCoptimization
+        class each time a data penalty must be computed.
+
+        (f) struct SparseDataCost {
+      SiteID site;
+      EnergyTermType cost;
     };
     void setDataCost(LabelID l, SparseDataCost *costs, SiteID count);
-    
+
     For some applications, each label is feasible for only a small fraction
     of the overall sites. One way to do this is to simply assign high cost to
     any infeasible site. A much more efficient way is to specify exactly
@@ -285,7 +305,7 @@ The following functions can be called any time before or after expansion.
     s1 and s2 to  have labels, respectively, l1 and l2 is f(s1,s2,l1,l2). This function can be 
     called only one time.         
 
-(c) void setSmoothCost(SmoothCostFnExtra fn,void *extraData);	
+(c) void setSmoothCost(SmoothCostFnExtra fn,void *extraData);
 
     Same as above, but can pass an extra pointer to the data needed for computation
 
@@ -310,40 +330,51 @@ The following functions can be called any time before or after expansion.
 
 (f) void setSmoothCostFunctor(SmoothCostFunctor* f);
 
-    Experienced C++ users can subclass our SmoothCostFunctor base class to achieve
-    a similar functionality as (b) or (c) above. By overriding the compute() method 
-    of SmoothCostFunctor, your compute() method will be called by the GCoptimization
-    class each time a smoothness penalty must be computed.
+    Experienced C++ users can subclass our SmoothCostFunctor base class to
+            achieve a similar functionality as(b) or
+        (c) above.By overriding the compute() method of SmoothCostFunctor,
+        your compute() method will be called by the GCoptimization
+        class each time a smoothness penalty must be computed.
 
+        ------------------------Label
+        Costs(global indicator potentials)-- ------------------
 
-------------------------Label Costs (global indicator potentials)--------------------
+        (a) void setLabelCost(EnergyTermType cost);
+    Penalize the appearance of all labels equally.Replaces
+        all current label costs,
+        if any.
 
-(a) void setLabelCost(EnergyTermType cost);
-    Penalize the appearance of all labels equally. Replaces all current label
-    costs, if any.
-
-(b) void setLabelCost(EnergyTermType* costArray);
+        (b) void setLabelCost(EnergyTermType *costArray);
     Set each individual label cost separately. The costArray must have one
     entry for each possible label. Replaces all current label costs, if any.
     The cost array will be copied intenally, so your array can be freed.
 
 (c) void setLabelSubsetCost(LabelID* labels, LabelID numLabels, EnergyTermType cost);
-    Set cost for a specific subset of labels. The cost will be imposed iff the
-    current labeling contains at least one label from the 'labels' array.
-    The labels array will be copied internally, so your array can be freed.
+    Set cost for a specific subset of labels
+        .The cost will be imposed iff the current labeling contains at least one
+            label from the 'labels' array.The labels array will be copied
+                internally,
+        so your array can be freed
+                .
 
-##################################################################
+            ##################################################################
 
-6. Optimizing the energy
+            6. Optimizing the energy
 
-You can optimize the energy and get the resulting labeling using the following functions.  Notice that they can 
-be called as many times as one wishes after the constructor has been called and the data/smoothness terms
-(and the neighborhood system, if general graph) has beeen set.  The initial labeling is set to consists of
-all 0's. Use function setLabel(SiteID pixelP, LabelID labelL), described under heading (x) in this section
-to initialize the labeling to anything else (but in the valid range, of course, labels must be between
-0 and num_labels-1)
+                You can optimize the energy and get the resulting
+                    labeling using the following functions.Notice that they can
+                        be called as many times as one wishes after the
+                            constructor has been called and the data /
+            smoothness terms(and the neighborhood system, if general graph)
+                has beeen set.The initial labeling is set to consists of
+                    all 0's. Use function setLabel(SiteID pixelP,
+                                                   LabelID labelL),
+        described under heading(x) in this section to initialize the labeling to
+            anything else(but in the valid range, of course,
+                          labels must be between 0 and num_labels - 1)
 
-a) EnergyType expansion(int max_num_iterations=-1);
+                a) EnergyType
+    expansion(int max_num_iterations = -1);
    Runs the expansion algorithm until convergence (convergence is guaranteed)
    or, if max_num_iterations > 0, until a certain number of cycles (iterations).
    Returns the energy of the resulting labeling.
@@ -370,11 +401,13 @@ f) LabelID whatLabel(SiteID site);
    Returns the current label assigned to site.  Can be called at any time after the constructor call.
 
 g) void setLabel(SiteID s, LabelID l);
-   Sets the label of site s to the the input parameter l. Can be called at any time after 
-   the constructor call. This is useful for initializing the labeling to something specific 
-   before optimization starts.
+   Sets the label of site s to the the input parameter
+       l.Can be called at any time after the constructor
+           call.This is useful for initializing the labeling to something
+               specific before optimization starts.
 
-h) void setLabelOrder(bool RANDOM_LABEL_ORDER);
+       h) void
+   setLabelOrder(bool RANDOM_LABEL_ORDER);
    By default, the labels for the swap and expansion algorithms are visited in not random order, 
    but random label visitation might give better results. To set the label order to
    be not random, call setLabelOrder(false).  To set it to be random, call setLabelOrder(true). Notice,
@@ -386,4 +419,3 @@ h) void setLabelOrder(bool RANDOM_LABEL_ORDER);
 7. Example usage.
 
    See example.cpp for C++ example, or see matlab\README.TXT for MATLAB example.
-
