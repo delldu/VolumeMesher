@@ -104,22 +104,13 @@ void read_nodes_and_constraints(double *coords_A, uint32_t npts_A,
 
   if (verbose)
     printf("Using %u non-degenerate constraints\n", *ntri);
-
-  //// DEBUG
-  // FILE *file = fopen("prova.off", "w");
-  // fprintf(file, "OFF\n%u %u 0\n", *npts, *ntri);
-  // for (uint32_t i = 0; i < (*npts); i++) fprintf(file, "%f %f %f\n",
-  // (*vertices_p)[i].coord[0], (*vertices_p)[i].coord[1],
-  // (*vertices_p)[i].coord[2]); for (uint32_t i = 0; i < (*ntri); i++)
-  // fprintf(file, "3 %u %u %u\n", (*tri_vertices_p)[3 * i], (*tri_vertices_p)[3
-  // * i + 1], (*tri_vertices_p)[3 * i + 2]); fclose(file); exit(0);
 }
 
 void read_nodes_and_constraints_twoInput(
     double *coords_A, uint32_t npts_A, uint32_t *tri_idx_A, uint32_t ntri_A,
     double *coords_B, uint32_t npts_B, uint32_t *tri_idx_B, uint32_t ntri_B,
     vertex_t **vertices_p, uint32_t *npts, uint32_t **tri_vertices_p,
-    uint32_t *ntri, CONSTR_GROUP_T **tri_group, bool verbose) {
+    uint32_t *ntri, uint32_t **tri_group, bool verbose) {
 
   // Global numbers of points and triangles.
   *npts = npts_A + npts_B;
@@ -156,9 +147,7 @@ void read_nodes_and_constraints_twoInput(
 
   uint32_t i1, i2, i3, base_ntri_A = ntri_A;
   for (uint32_t ti = 0, j = 0; ti < (*ntri); j++) {
-
     if (ti < ntri_A) {
-
       i1 = tri_idx_A[3 * j];
       i2 = tri_idx_A[3 * j + 1];
       i3 = tri_idx_A[3 * j + 2];
@@ -176,7 +165,6 @@ void read_nodes_and_constraints_twoInput(
         ntri_A--;
       } else
         ti++;
-
     } else {
       if (ti == ntri_A)
         j = 0;
@@ -255,7 +243,7 @@ BSPcomplex *makePolyhedralMesh(double *coords_A, uint32_t npts_A,
 
   //--Initialization-----------------
   TetMesh *mesh = new TetMesh;
-  constraints_t *constraints = new constraints_t;
+  Constraint *constraints = new Constraint;
 
   if (!two_input) {
     read_nodes_and_constraints(coords_A, npts_A, tri_idx_A, ntri_A,
@@ -320,7 +308,7 @@ BSPcomplex *makePolyhedralMesh(double *coords_A, uint32_t npts_A,
     printf("\tDelaunay insertion: %f s\n",
            (double)(time2 - time1) / CLOCKS_PER_SEC);
 
-  //--Half-Edges-and-Virtual-Constraints----------------------
+  //--Half-Edges-and-Virtual-Constraint----------------------
   half_edge_t *half_edges = (half_edge_t *)calloc(
       3 * constraints->num_triangles, sizeof(half_edge_t));
   fill_half_edges(constraints, half_edges);
@@ -359,9 +347,12 @@ BSPcomplex *makePolyhedralMesh(double *coords_A, uint32_t npts_A,
   uint32_t *num_map_f3 = (uint32_t *)calloc(mesh->tet_num, sizeof(uint32_t));
   uint32_t **map_f3 = (uint32_t **)calloc(mesh->tet_num, sizeof(uint32_t *));
 
-  insert_constraints(mesh, constraints, num_map, map, num_map_f0, map_f0,
-                     num_map_f1, map_f1, num_map_f2, map_f2, num_map_f3,
-                     map_f3);
+  insert_constraints(mesh, constraints, 
+                     num_map, map, 
+                     num_map_f0, map_f0,
+                     num_map_f1, map_f1,
+                     num_map_f2, map_f2,
+                     num_map_f3, map_f3);
 
   clock_t time4 = clock();
   if (verbose)
@@ -369,15 +360,17 @@ BSPcomplex *makePolyhedralMesh(double *coords_A, uint32_t npts_A,
 
   double DEL_time = (double)(time4 - time0) / CLOCKS_PER_SEC;
   if (verbose)
-    printf("TOTAL Delaunay+map: %f s\n\n", DEL_time);
+    printf("TOTAL Delaunay + map: %f s\n\n", DEL_time);
 
   initFPU(); // From here on we need indirect predicates
 
   //-Init BSP with mesh and constraints---------------------------------------
   BSPcomplex *complex = new BSPcomplex(
-      mesh, constraints, (const uint32_t **)map, num_map,
-      (const uint32_t **)map_f0, num_map_f0, (const uint32_t **)map_f1,
-      num_map_f1, (const uint32_t **)map_f2, num_map_f2,
+      mesh, constraints,
+      (const uint32_t **)map, num_map,
+      (const uint32_t **)map_f0, num_map_f0,
+      (const uint32_t **)map_f1, num_map_f1, 
+      (const uint32_t **)map_f2, num_map_f2,
       (const uint32_t **)map_f3, num_map_f3);
 
   // Free the memory used by map(s) and num_map(s)
@@ -415,13 +408,11 @@ BSPcomplex *makePolyhedralMesh(double *coords_A, uint32_t npts_A,
     printf("\tInitial cells: %lu\n", complex->cells.size());
 
   //-Subdivision----------------------------------------------------------------
-
-  uint64_t cell_ind = 0;
-  while (cell_ind < complex->cells.size()) {
-    if (complex->cells[cell_ind].constraints.size() > 0)
-      complex->splitCell(cell_ind);
+  for (size_t i = 0; i < complex->cells.size(); /*ignore */) {
+    if (complex->cells[i].constraints.size() > 0)
+      complex->splitCell(i);
     else
-      cell_ind++;
+      i++;
   }
   clock_t time6 = clock();
   if (verbose)
@@ -431,10 +422,10 @@ BSPcomplex *makePolyhedralMesh(double *coords_A, uint32_t npts_A,
     printf("\tFinal cells: %lu\n", complex->cells.size());
 
   //--Decide colour of GREY faces-----------------------------------------------
-  for (uint64_t face_ind = 0; face_ind < complex->faces.size(); face_ind++) {
-    BSPface &face = complex->faces[face_ind];
+  for (size_t i = 0; i < complex->faces.size(); i++) {
+    BSPface &face = complex->faces[i];
     if (face.colour == GREY)
-      face.colour = complex->blackAB_or_white(face_ind, bool_opcode != '0');
+      face.colour = complex->blackAB_or_white(i, bool_opcode != '0');
   }
 
   clock_t time7 = clock();

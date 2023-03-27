@@ -57,52 +57,52 @@ static inline void extract_tetEdgeVrts(uint32_t *tetEdge_vrts, uint64_t tet_ind,
 // indices instead of coordinates
 
 static inline uint32_t vrt_pointInInnerSegment(uint32_t pt_ind,
-                                               uint32_t endpt0_ind,
-                                               uint32_t endpt1_ind,
+                                               uint32_t endpt0,
+                                               uint32_t endpt1,
                                                const TetMesh *mesh) {
 
-  return (pt_ind != endpt0_ind && pt_ind != endpt1_ind &&
+  return (pt_ind != endpt0 && pt_ind != endpt1 &&
           pointInInnerSegment(mesh->vertices[pt_ind].coord,
-                              mesh->vertices[endpt0_ind].coord,
-                              mesh->vertices[endpt1_ind].coord));
+                              mesh->vertices[endpt0].coord,
+                              mesh->vertices[endpt1].coord));
 }
 
-static inline uint32_t vrt_pointInSegment(uint32_t pt_ind, uint32_t endpt0_ind,
-                                          uint32_t endpt1_ind,
+static inline uint32_t vrt_pointInSegment(uint32_t pt_ind, uint32_t endpt0,
+                                          uint32_t endpt1,
                                           const TetMesh *mesh) {
 
-  return (pt_ind == endpt0_ind || pt_ind == endpt1_ind ||
+  return (pt_ind == endpt0 || pt_ind == endpt1 ||
           pointInSegment(mesh->vertices[pt_ind].coord,
-                         mesh->vertices[endpt0_ind].coord,
-                         mesh->vertices[endpt1_ind].coord));
+                         mesh->vertices[endpt0].coord,
+                         mesh->vertices[endpt1].coord));
 }
 
 static inline uint32_t vrt_pointInInnerTriangle(uint32_t pt_ind,
-                                                uint32_t tri_vrt0_ind,
-                                                uint32_t tri_vrt1_ind,
-                                                uint32_t tri_vrt2_ind,
+                                                uint32_t tri_vrt0,
+                                                uint32_t tri_vrt1,
+                                                uint32_t tri_vrt2,
                                                 const TetMesh *mesh) {
 
-  return (pt_ind != tri_vrt0_ind && pt_ind != tri_vrt1_ind &&
-          pt_ind != tri_vrt2_ind &&
+  return (pt_ind != tri_vrt0 && pt_ind != tri_vrt1 &&
+          pt_ind != tri_vrt2 &&
           pointInInnerTriangle(mesh->vertices[pt_ind].coord,
-                               mesh->vertices[tri_vrt0_ind].coord,
-                               mesh->vertices[tri_vrt1_ind].coord,
-                               mesh->vertices[tri_vrt2_ind].coord));
+                               mesh->vertices[tri_vrt0].coord,
+                               mesh->vertices[tri_vrt1].coord,
+                               mesh->vertices[tri_vrt2].coord));
 }
 
 static inline uint32_t vrt_pointInTriangle(uint32_t pt_ind,
-                                           uint32_t tri_vrt0_ind,
-                                           uint32_t tri_vrt1_ind,
-                                           uint32_t tri_vrt2_ind,
+                                           uint32_t tri_vrt0,
+                                           uint32_t tri_vrt1,
+                                           uint32_t tri_vrt2,
                                            const TetMesh *mesh) {
 
-  return (pt_ind == tri_vrt0_ind || pt_ind == tri_vrt1_ind ||
-          pt_ind == tri_vrt2_ind ||
+  return (pt_ind == tri_vrt0 || pt_ind == tri_vrt1 ||
+          pt_ind == tri_vrt2 ||
           pointInTriangle(mesh->vertices[pt_ind].coord,
-                          mesh->vertices[tri_vrt0_ind].coord,
-                          mesh->vertices[tri_vrt1_ind].coord,
-                          mesh->vertices[tri_vrt2_ind].coord));
+                          mesh->vertices[tri_vrt0].coord,
+                          mesh->vertices[tri_vrt1].coord,
+                          mesh->vertices[tri_vrt2].coord));
 }
 
 static inline uint32_t vrt_innerSegmentsCross(uint32_t endpt0sgmA_ind,
@@ -124,38 +124,38 @@ static inline uint32_t vrt_innerSegmentsCross(uint32_t endpt0sgmA_ind,
 }
 
 static inline uint32_t vrt_innerSegmentCrossesInnerTriangle(
-    uint32_t endpt0_ind, uint32_t endpt1_ind, uint32_t tri_vrt0_ind,
-    uint32_t tri_vrt1_ind, uint32_t tri_vrt2_ind, const TetMesh *mesh) {
+    uint32_t endpt0, uint32_t endpt1, uint32_t tri_vrt0,
+    uint32_t tri_vrt1, uint32_t tri_vrt2, const TetMesh *mesh) {
 
-  if (endpt0_ind == tri_vrt0_ind || endpt1_ind == tri_vrt0_ind ||
-      endpt0_ind == tri_vrt1_ind || endpt1_ind == tri_vrt1_ind ||
-      endpt0_ind == tri_vrt2_ind || endpt1_ind == tri_vrt2_ind)
+  if (endpt0 == tri_vrt0 || endpt1 == tri_vrt0 ||
+      endpt0 == tri_vrt1 || endpt1 == tri_vrt1 ||
+      endpt0 == tri_vrt2 || endpt1 == tri_vrt2)
     return 0;
 
-  const double *e0_coord = mesh->vertices[endpt0_ind].coord;
-  const double *e1_coord = mesh->vertices[endpt1_ind].coord;
-  const double *t0_coord = mesh->vertices[tri_vrt0_ind].coord;
-  const double *t1_coord = mesh->vertices[tri_vrt1_ind].coord;
-  const double *t2_coord = mesh->vertices[tri_vrt2_ind].coord;
+  const double *e0_coord = mesh->vertices[endpt0].coord;
+  const double *e1_coord = mesh->vertices[endpt1].coord;
+  const double *t0_coord = mesh->vertices[tri_vrt0].coord;
+  const double *t1_coord = mesh->vertices[tri_vrt1].coord;
+  const double *t2_coord = mesh->vertices[tri_vrt2].coord;
   return innerSegmentCrossesInnerTriangle(e0_coord, e1_coord, t0_coord,
                                           t1_coord, t2_coord);
 }
 
 static inline uint32_t
-vrt_innerSegmentCrossesTriangle(uint32_t endpt0_ind, uint32_t endpt1_ind,
-                                uint32_t tri_vrt0_ind, uint32_t tri_vrt1_ind,
-                                uint32_t tri_vrt2_ind, const TetMesh *mesh) {
+vrt_innerSegmentCrossesTriangle(uint32_t endpt0, uint32_t endpt1,
+                                uint32_t tri_vrt0, uint32_t tri_vrt1,
+                                uint32_t tri_vrt2, const TetMesh *mesh) {
 
-  if (endpt0_ind == tri_vrt0_ind || endpt1_ind == tri_vrt0_ind ||
-      endpt0_ind == tri_vrt1_ind || endpt1_ind == tri_vrt1_ind ||
-      endpt0_ind == tri_vrt2_ind || endpt1_ind == tri_vrt2_ind)
+  if (endpt0 == tri_vrt0 || endpt1 == tri_vrt0 ||
+      endpt0 == tri_vrt1 || endpt1 == tri_vrt1 ||
+      endpt0 == tri_vrt2 || endpt1 == tri_vrt2)
     return 0;
 
-  const double *e0_coord = mesh->vertices[endpt0_ind].coord;
-  const double *e1_coord = mesh->vertices[endpt1_ind].coord;
-  const double *t0_coord = mesh->vertices[tri_vrt0_ind].coord;
-  const double *t1_coord = mesh->vertices[tri_vrt1_ind].coord;
-  const double *t2_coord = mesh->vertices[tri_vrt2_ind].coord;
+  const double *e0_coord = mesh->vertices[endpt0].coord;
+  const double *e1_coord = mesh->vertices[endpt1].coord;
+  const double *t0_coord = mesh->vertices[tri_vrt0].coord;
+  const double *t1_coord = mesh->vertices[tri_vrt1].coord;
+  const double *t2_coord = mesh->vertices[tri_vrt2].coord;
   return innerSegmentCrossesTriangle(e0_coord, e1_coord, t0_coord, t1_coord,
                                      t2_coord);
 }
@@ -369,8 +369,7 @@ bool triangle_in_VT(uint32_t v0, uint32_t v1, uint32_t v2, TetMesh *mesh,
 
   bool found = false;
   uint64_t num_incTet_v0 = 0, tet_ID;
-  uint64_t *incTet_v0 = NULL;
-  incTet_v0 = mesh->incident_tetrahedra(v0, &num_incTet_v0);
+  uint64_t *incTet_v0 = mesh->incident_tetrahedra(v0, &num_incTet_v0);
 
   for (uint64_t i = 0; i < num_incTet_v0; i++) {
     tet_ID = 4 * incTet_v0[i];
@@ -534,7 +533,7 @@ int half_edges_compare(const void *void_he1, const void *void_he2) {
 // Output: fills the array half_edges of struct half_edge_t, for each constraint
 //         side one half edge is created by using side endpoints and the index
 //         of the constraint.
-void fill_half_edges(const constraints_t *constraints,
+void fill_half_edges(const Constraint *constraints,
                      half_edge_t *half_edges) {
   for (uint32_t t = 0; t < constraints->num_triangles; t++) {
     uint32_t tri_id = 3 * t; // t is the constraint index.
@@ -588,7 +587,7 @@ void sort_half_edges(half_edge_t *half_edges, uint32_t num_half_edges) {
 // Output: modifing constraints add the three vertices of a virtual constraint
 //         in position pos, pos+1, pos+2 of the vector constraints->tri_vertices
 void add_virtual_constraint(uint32_t he, uint32_t pos,
-                            constraints_t *constraints,
+                            Constraint *constraints,
                             const half_edge_t *half_edges,
                             const TetMesh *mesh) {
   const uint32_t tri_id = 3 * half_edges[he].tri_ind;
@@ -624,7 +623,7 @@ void add_virtual_constraint(uint32_t he, uint32_t pos,
 //         0 otherwise.
 bool tri_onSameEdge_allCoPlanar(uint32_t he0, uint32_t he1,
                                 const half_edge_t *half_edges,
-                                const constraints_t *constraints,
+                                const Constraint *constraints,
                                 const TetMesh *mesh) {
   // Find the vertex (u) of constraint half_edges[he].tri_ind different
   // from edge endpoints.
@@ -703,20 +702,18 @@ bool tri_onSameEdge_allCoPlanar(uint32_t he0, uint32_t he1,
 // Output: by using constraints it adds needed vistual constraints to
 //         constraints structure in order to ensure that during BSP subdivision
 //         all constraints edges will be inserted.
-uint32_t place_virtual_constraints(TetMesh *mesh, constraints_t *constraints,
+uint32_t place_virtual_constraints(TetMesh *mesh, Constraint *constraints,
                                    half_edge_t *half_edges) {
   // 1- Count needed virtual constraints.
   const uint32_t num_half_edges = 3 * constraints->num_triangles;
   // Mark half-edges which requires a virtual constraint:
   // - those that have only one incident constraint,
   // - those that have all incident constraints coplanar.
-  uint32_t *need_virtual_constraint =
-      (uint32_t *)calloc(num_half_edges, sizeof(uint32_t));
+  uint32_t *need_virtual_constraint = (uint32_t *)calloc(num_half_edges, sizeof(uint32_t));
   uint32_t num_virtual_constraints = 0;
 
   uint32_t he = 0; // half-edge index.
   while (he < num_half_edges - 1) {
-
     uint32_t onSameEdge = 1; // Counts how many constraints are
                              // incident on current half-edge.
     while (he + onSameEdge < num_half_edges &&
@@ -736,16 +733,16 @@ uint32_t place_virtual_constraints(TetMesh *mesh, constraints_t *constraints,
 
   // 2- Add virtual constraints.
 
-  // Resize constraints_vrts
+  // Resize constraints_verts
   uint32_t pos = 3 * constraints->num_triangles;
   constraints->num_virtual_triangles = num_virtual_constraints;
   constraints->num_triangles += num_virtual_constraints;
   constraints->tri_vertices =
       (uint32_t *)realloc(constraints->tri_vertices,
                           3 * constraints->num_triangles * sizeof(uint32_t));
-  constraints->constr_group = (CONSTR_GROUP_T *)realloc(
+  constraints->constr_group = (uint32_t *)realloc(
       constraints->constr_group,
-      constraints->num_triangles * sizeof(CONSTR_GROUP_T));
+      constraints->num_triangles * sizeof(uint32_t));
 
   // Fill constraints->tri_vertices with virtual constraints vertices
   for (uint32_t he = 0; he < num_half_edges; he++)
@@ -855,13 +852,6 @@ uint32_t intersectionClass_tetEdge_constr(const uint32_t *c_vrts,
     // the constraint (boundary included) -> PROPER INTERSECTION.
     if (tE0_in && tE1_in)
       return 0;
-// At least one vertices between tE_vrts[0] and tE_vrts[1] must stay in the
-// the constraint (otherwise there will be no intersection - IMPOSSIBLE)
-#ifdef DEBUG
-    if (!tE0_in && !tE1_in)
-      printf("[conforming_mesh.c]intersectionClass_tetEdge_constr: ERROR "
-             "there is no intersection.\n");
-#endif
 
     // Note. a constraint vertex cannot stay in the interior of the edge
     //       <tE_vrts[0],tE_vrts[1]>.
@@ -1958,8 +1948,7 @@ uint64_t *intersections_TetEdgeCrossConstraintSide(
   //       of that face.
 
   uint64_t num_incTet;
-  uint64_t *incTet =
-      mesh->ETrelation(tet_cutted_edge, *nextTet_ind, &num_incTet);
+  uint64_t *incTet = mesh->ETrelation(tet_cutted_edge, *nextTet_ind, &num_incTet);
 
   // Not already visited tet_
   uint64_t num_newTetIn_incTet = 0;
@@ -1975,10 +1964,6 @@ uint64_t *intersections_TetEdgeCrossConstraintSide(
     // Cycle over the tetrahedra incident in tet_cutted_edge to fill
     // connecting_vrts and return information on how the constraint
     // side exit from the intersecated tet_
-
-#ifdef DEBUG
-  uint32_t all_tets_intersects_only_pstar = 1;
-#endif
 
   uint64_t tet_ind;
   uint32_t v_oppe_inds[2]; // Indices of the endpoints of the edge
@@ -2443,10 +2428,6 @@ void intersections_constraint_sides(TetMesh *mesh,
     uint32_t v_stop = constraint_vrts[(constr_side + 1) % 3];
     uint32_t other_constr_vrt = constraint_vrts[(constr_side + 2) % 3];
 
-#ifdef DEBUG
-    printf("--> Analysing side (%u,%u) of the constraint.\n", v_start, v_stop);
-#endif
-
     // Array to store the information relative to the
     // constraint side travelling (Growing-region).
     // It has 4 elements:
@@ -2544,13 +2525,13 @@ void intersections_constraint_sides(TetMesh *mesh,
 }
 
 //  Input: pointer to the mesh,
-//         indices of a constraint-tiangle vertices: constraints_vrts,
+//         indices of a constraint-tiangle vertices: constraints_verts,
 //         index of a tetrahedron tet: tet_ind,
 //         pointer to the array of tetrahedra marker: mark_TetIntersection.
 // Output: return 1 if tet is a not-already-visited tetrahedron AND
 //         intersects the interior of the constraint, 0 otherwise.
 static inline uint32_t constrInterior_found(const TetMesh *mesh,
-                                            const uint32_t *constraints_vrts,
+                                            const uint32_t *constraints_verts,
                                             uint64_t tet_ind,
                                             uint32_t *mark_TetIntersection) {
 
@@ -2560,7 +2541,7 @@ static inline uint32_t constrInterior_found(const TetMesh *mesh,
 
   uint64_t f_ID = UINT64_MAX;
   uint32_t result =
-      tet_intersects_triInterior(tet_ind, constraints_vrts, mesh, &f_ID);
+      tet_intersects_triInterior(tet_ind, constraints_verts, mesh, &f_ID);
 
   if (result == 0) { // Tetrahedron does not intersects the constraint interior.
     return 0;
@@ -2587,7 +2568,7 @@ static inline uint32_t constrInterior_found(const TetMesh *mesh,
 }
 
 //  Input: pointer to the mesh,
-//         indices of a constraint-tiangle vertices: constraints_vrts,
+//         indices of a constraint-tiangle vertices: constraints_verts,
 //         index of a tetrahedron tet intersecting the constraint: bnd_tet_ind,
 //         pointer to the array of tetrahedra marker: mark_TetIntersection,
 //         pointer to tetrahedra index type: adj_tet_ind_return.
@@ -2596,7 +2577,7 @@ static inline uint32_t constrInterior_found(const TetMesh *mesh,
 //         by using adj_tet_ind_return returns the index of the tetrahedron
 //         if 1 is rerurned.
 uint32_t constrInterior_firstStep(const TetMesh *mesh,
-                                  const uint32_t *constraints_vrts,
+                                  const uint32_t *constraints_verts,
                                   uint64_t bnd_tet_ind,
                                   uint32_t *mark_TetIntersection,
                                   uint64_t *adj_tet_ind_return) {
@@ -2605,20 +2586,9 @@ uint32_t constrInterior_firstStep(const TetMesh *mesh,
 
     uint64_t adj_tet_ind = mesh->tet_neigh[4 * bnd_tet_ind + i] >> 2;
 
-    // #ifdef DEBUG
-    // printf("Looking at tetrahedron %llu adjacent to %llu.\n",
-    //        adj_tet_ind, bnd_tet_ind);
-    // #endif
-
-    if (constrInterior_found(mesh, constraints_vrts, adj_tet_ind,
+    if (constrInterior_found(mesh, constraints_verts, adj_tet_ind,
                              mark_TetIntersection)) {
       *adj_tet_ind_return = adj_tet_ind;
-
-      // #ifdef DEBUG
-      // printf("(First Step) This tetrahedron intersects ONLY the "
-      //        "interior of the constraint.\n");
-      // #endif
-
       return 1;
     }
   }
@@ -2627,7 +2597,7 @@ uint32_t constrInterior_firstStep(const TetMesh *mesh,
 }
 
 //  Input: pointer to the mesh,
-//         indices of a constraint-tiangle vertices: constraints_vrts,
+//         indices of a constraint-tiangle vertices: constraints_verts,
 //         index of a tetrahedron tet intersecting the constraint: tet_ind,
 //         pointer to the array of tetrahedra marker: mark_TetIntersection.
 // Output: return the number of not-already-visited tetrahedron that intersects
@@ -2636,7 +2606,7 @@ uint32_t constrInterior_firstStep(const TetMesh *mesh,
 //         boundary + all the alraedy-visited of those that intersectcontraint
 //         interior).
 uint64_t constrInterior_count(const TetMesh *mesh,
-                              const uint32_t *constraints_vrts,
+                              const uint32_t *constraints_verts,
                               uint64_t tet_ind,
                               uint32_t *mark_TetIntersection) {
   uint64_t num_tets_intersects = 1; // tet intersects (only)
@@ -2647,10 +2617,10 @@ uint64_t constrInterior_count(const TetMesh *mesh,
 
     uint64_t adj_tet_ind = mesh->tet_neigh[4 * tet_ind + i] >> 2;
 
-    if (constrInterior_found(mesh, constraints_vrts, adj_tet_ind,
+    if (constrInterior_found(mesh, constraints_verts, adj_tet_ind,
                              mark_TetIntersection))
       num_tets_intersects += constrInterior_count(
-          mesh, constraints_vrts, adj_tet_ind, mark_TetIntersection);
+          mesh, constraints_verts, adj_tet_ind, mark_TetIntersection);
   }
 
   return num_tets_intersects;
@@ -2869,7 +2839,7 @@ void compile_maps(uint32_t tri_ind, uint64_t n, const uint64_t *tets,
 }
 
 /***********************************/
-/** Constraints insertion GENERAL **/
+/** Constraint insertion GENERAL **/
 /***********************************/
 // This function explores the mesh and traces the intersections between the
 // constraints-triangles and the mesh-tetrahdra.
@@ -2897,7 +2867,7 @@ void compile_maps(uint32_t tri_ind, uint64_t n, const uint64_t *tets,
 //        - ONLY an edge of the tetrahedron,
 //        - ONLY a vertex of the tetrahedron.
 
-void insert_constraints(TetMesh *mesh, constraints_t *constraints,
+void insert_constraints(TetMesh *mesh, Constraint *constraints,
                         uint32_t *num_map, uint32_t **map, uint32_t *num_map_f0,
                         uint32_t **map_f0, uint32_t *num_map_f1,
                         uint32_t **map_f1, uint32_t *num_map_f2,

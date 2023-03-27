@@ -21,7 +21,6 @@
 #define BLACK_B 2
 #define BLACK_AB 3
 #define GREY 4
-#define COLOUR_T uint32_t
 
 // Cell places
 #define UNDEFINED 4
@@ -30,9 +29,6 @@
 #define INTERNAL_AB 3
 #define EXTERNAL 0
 
-// To manage with constraints edges
-#define ENDPTS_T pair<uint32_t, uint32_t>
-#define NEW_ENDPTS make_pair(UINT32_MAX, UINT32_MAX)
 
 class BSPedge { // The edge of a BSPcell.
 public:
@@ -86,7 +82,7 @@ public:
   std::vector<uint32_t> coplanar_constraints;
   uint32_t meshVertices[3]; // 3 vertices of the mesh-tet-face
                             // which contains BSPedge.
-  COLOUR_T colour;
+  uint32_t colour;
 
   BSPface() {}
 
@@ -102,14 +98,8 @@ public:
     conn_cells[1] = c2;
   }
 
-  size_t getSize() const {
-    return sizeof(BSPface) + sizeof(uint64_t) * edges.size() +
-           sizeof(uint32_t) * coplanar_constraints.size();
-  }
-
   BSPface(uint32_t m_v1, uint32_t m_v2, uint32_t m_v3, uint64_t c1, uint64_t c2,
-          COLOUR_T _colour, const vector<uint32_t> &constraints) {
-
+          uint32_t _colour, const vector<uint32_t> &constraints) {
     meshVertices[0] = m_v1;
     meshVertices[1] = m_v2;
     meshVertices[2] = m_v3;
@@ -123,8 +113,7 @@ public:
 
   // Common face (between splitted cell sub-cells) constructor
   BSPface(uint32_t m_v1, uint32_t m_v2, uint32_t m_v3, uint64_t c1, uint64_t c2,
-          COLOUR_T _colour) {
-
+          uint32_t _colour) {
     meshVertices[0] = m_v1;
     meshVertices[1] = m_v2;
     meshVertices[2] = m_v3;
@@ -143,7 +132,7 @@ class BSPcell { // A convex polyhedron defined by the intersection of a
                 // mesh-tet and a certain number of constraints.
 public:
   std::vector<uint64_t> faces;       // BSPfaces bounding the BSPcell.
-  std::vector<uint32_t> constraints; // Constraints that intersect
+  std::vector<uint32_t> constraints; // Constraint that intersect
                                      // the BSPcell.
   uint32_t place = UNDEFINED; // Internal, external or undefined (see macros)
                               // w.r.t. constraints surface.
@@ -161,11 +150,6 @@ public:
   }
 
   inline void removeFace(uint64_t face);
-
-  size_t getSize() const {
-    return sizeof(BSPcell) + sizeof(uint64_t) * faces.size() +
-           sizeof(uint32_t) * constraints.size();
-  }
 };
 
 class BSPcomplex {
@@ -176,9 +160,9 @@ public:
   std::vector<BSPedge> edges;
   std::vector<BSPface> faces;
   std::vector<BSPcell> cells;
-  std::vector<uint32_t> constraints_vrts; // The constraint-triangles are
-                                          // constraints_vrts.size()/3 .
-  std::vector<CONSTR_GROUP_T> constraint_group;
+  std::vector<uint32_t> constraints_verts; // The constraint-triangles are
+                                          // constraints_verts.size()/3 .
+  std::vector<uint32_t> constraint_group;
   uint32_t first_virtual_constraint;
 
   std::vector<uint32_t> final_tets; // Simple vector storing the tetrahedra
@@ -193,7 +177,7 @@ public:
   std::vector<uint64_t> edge_visit; // To flag visited edges when needed
                                     // (same length of edges)
 
-  BSPcomplex(const TetMesh *mesh, const constraints_t *constraints,
+  BSPcomplex(const TetMesh *mesh, const Constraint *constraints,
              const uint32_t **map, const uint32_t *num_map,
              const uint32_t **map_f0, const uint32_t *num_map_f0,
              const uint32_t **map_f1, const uint32_t *num_map_f1,
@@ -206,19 +190,11 @@ public:
   }
 
   // Save the faces representing the input constraints
-  void saveBlackFaces(const char *filename, bool triangulate = false);
+  void saveBlackFaces(const char *filename);
 
   // Save the faces that separate in and out
   void saveSkin(const char *filename, const char bool_opcode,
                 bool triangulate = false);
-
-  // Makes a triangle mesh out of the skin faces
-  void extractSkinTriMesh(const char *filename, const char bool_opcode,
-                          double **coords, uint32_t *npts, uint32_t **tri_idx,
-                          uint32_t *ntri);
-
-  // Return the overall number of bytes occupied by the BSP structure
-  size_t getStructureSize() const;
 
   // Complex elements relations
   inline void assigne_edge_to_face(uint64_t edge, uint64_t face);
@@ -236,11 +212,6 @@ public:
   void fill_cell_locDS(BSPcell &cell, vector<uint64_t> &cell_edges,
                        vector<uint32_t> &cell_vrts);
   inline uint64_t find_face_edge(const BSPface &face, uint32_t v, uint32_t u);
-  uint64_t count_cellFaces_inc_cellVrt(const BSPcell &cell, uint32_t v);
-  void cell_VFrelation(const BSPcell &cell, uint32_t v,
-                       vector<uint64_t> &v_incFaces_ind);
-  void COMPL_cell_VFrelation(const BSPcell &cell, uint32_t v,
-                             vector<uint64_t> &v_NOT_incFaces_ind);
   bool is_virtual(uint32_t constr_ind);
 
   uint64_t getOppositeEdgeFace(const uint64_t e0, const uint64_t f0,
@@ -312,7 +283,7 @@ public:
   bool is_baricenter_inFace(const BSPface &face,
                             const explicitPoint3D &face_center,
                             int max_normComp);
-  COLOUR_T blackAB_or_white(uint64_t face_ind, bool two_input);
+  uint32_t blackAB_or_white(uint64_t face_ind, bool two_input);
 
   // Interior-exterior constraint surface
   void constraintsSurface_complexPartition(bool two_files = false);
@@ -323,12 +294,6 @@ public:
   void triangle_detach(uint64_t face_ind);
   bool aligned_face_edges(uint64_t fe0, uint64_t fe1, const BSPface &face);
   void triangulateFace(uint64_t face_ind);
-  void computeBaricenter(const vector<uint32_t> &vrts);
-  inline uint64_t triFace_oppEdge(const BSPface &face, uint32_t v);
-  uint64_t triFace_shareEdge(const BSPcell &cell, uint64_t face_ind,
-                             uint64_t vOppEdge_ind);
-  bool cell_is_tetrahedrizable_from_v(const BSPcell &cell, uint32_t v);
-  void makeTetrahedra();
 };
 
 /// <summary>

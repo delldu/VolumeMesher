@@ -47,8 +47,7 @@ struct vertex_t {
   uint32_t original_index; // Index to support reordering
 };
 
-// Tetrahedral mesh data structure
-
+// Tetrahedral mesh
 class TetMesh {
 public:
   // Vertices

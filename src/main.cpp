@@ -136,9 +136,8 @@ int main(int argc, char **argv) {
     read_OFF_file(fileB_name, &coords_B, &ncoords_B, &tri_idx_B, &ntriidx_B,
                   verbose);
 
-  BSPcomplex *complex =
-      makePolyhedralMesh(coords_A, ncoords_A, tri_idx_A, ntriidx_A, coords_B,
-                         ncoords_B, tri_idx_B, ntriidx_B, bool_opcode, verbose);
+  BSPcomplex *complex = makePolyhedralMesh(coords_A, ncoords_A, tri_idx_A, ntriidx_A,
+                          coords_B, ncoords_B, tri_idx_B, ntriidx_B, bool_opcode, verbose);
 
   printf("Writing output files ...\n");
   if (blackfaces)

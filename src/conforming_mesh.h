@@ -3,7 +3,6 @@
 
 #include "delaunay.h"
 
-#define CONSTR_GROUP_T uint32_t
 #define CONSTR_A 0
 #define CONSTR_B 1
 
@@ -15,8 +14,8 @@ struct half_edge_t {
                       // tri_vertices[i]=endpts[0] or tri_vertices[i]=endpts[1].
 };
 
-// constraints are triangles
-class constraints_t {
+// Constraint are triangles
+class Constraint {
 public:
   uint32_t *tri_vertices;
   uint32_t num_triangles;
@@ -25,10 +24,10 @@ public:
                                   // from num_triangles - num_virtual_triangles
                                   // to num_triangles-1.
 
-  constraints_t()
+  Constraint()
       : tri_vertices(NULL), num_triangles(0), constr_group(NULL),
         num_virtual_triangles(0){};
-  ~constraints_t() {
+  ~Constraint() {
     if (tri_vertices)
       free(tri_vertices);
     if (constr_group)
@@ -36,11 +35,11 @@ public:
   }
 };
 
-void fill_half_edges(const constraints_t *constraints, half_edge_t *half_edges);
+void fill_half_edges(const Constraint *constraints, half_edge_t *half_edges);
 void sort_half_edges(half_edge_t *half_edges, uint32_t num_half_edges);
-uint32_t place_virtual_constraints(TetMesh *mesh, constraints_t *constraints,
+uint32_t place_virtual_constraints(TetMesh *mesh, Constraint *constraints,
                                    half_edge_t *half_edges);
-void insert_constraints(TetMesh *, constraints_t *, uint32_t *, uint32_t **,
+void insert_constraints(TetMesh *, Constraint *, uint32_t *, uint32_t **,
                         uint32_t *, uint32_t **, uint32_t *, uint32_t **,
                         uint32_t *, uint32_t **, uint32_t *, uint32_t **);
 

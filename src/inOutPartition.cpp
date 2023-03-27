@@ -14,7 +14,7 @@
 // and return TRUE if the cell vertices are 'below' such constraint.
 bool isFirstConnCellBelowFace(BSPface &f, BSPcomplex *cpx) {
   const uint32_t *cid =
-      cpx->constraints_vrts.data() + f.coplanar_constraints[0] * 3;
+      cpx->constraints_verts.data() + f.coplanar_constraints[0] * 3;
   const genericPoint *pv1 = cpx->vertices[cid[0]];
   const genericPoint *pv2 = cpx->vertices[cid[1]];
   const genericPoint *pv3 = cpx->vertices[cid[2]];
