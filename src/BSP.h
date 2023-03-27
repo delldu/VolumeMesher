@@ -165,9 +165,6 @@ public:
   std::vector<uint32_t> constraint_group;
   uint32_t first_virtual_constraint;
 
-  std::vector<uint32_t> final_tets; // Simple vector storing the tetrahedra
-                                    // (only used when saving a tet-mesh)
-
   // Supporting vectors
   std::vector<char> vrts_orBin;     // Used to "cache" vertex orientations
                                     //  w.r.t. some plane.
