@@ -32,23 +32,6 @@ static inline void extract_tetVrts(uint32_t *tet_vrts, uint64_t tet_ind,
   // tet_vrts[3] = mesh->tet_node[4*tet_ind + 3];
 }
 
-// Given a tet = <v0,v1,v2,v3> the i-th face is opposite to vertex vi
-// (ex. face_0 = <v1,v2,v3> is opposite to v0)
-static inline void extract_tetFaceVrts(uint32_t *tetFace_vrts, uint64_t tet_ind,
-                                       uint64_t ID, const TetMesh *mesh) {
-  tetFace_vrts[0] = mesh->tet_node[4 * tet_ind + (ID + 1) % 4];
-  tetFace_vrts[1] = mesh->tet_node[4 * tet_ind + (ID + 2) % 4];
-  tetFace_vrts[2] = mesh->tet_node[4 * tet_ind + (ID + 3) % 4];
-}
-
-// Given a tet = <v0,v1,v2,v3> and the ID of two vertices returns the relative
-// edge endpoints. (ex.  1,3 -> edge_1,3 = <v1,v3>)
-static inline void extract_tetEdgeVrts(uint32_t *tetEdge_vrts, uint64_t tet_ind,
-                                       uint64_t ID1, uint64_t ID2,
-                                       const TetMesh *mesh) {
-  tetEdge_vrts[0] = mesh->tet_node[4 * tet_ind + ID1];
-  tetEdge_vrts[1] = mesh->tet_node[4 * tet_ind + ID2];
-}
 
 //---------------------------------
 // Geometric Predicates Interfaces
@@ -160,6 +143,7 @@ vrt_innerSegmentCrossesTriangle(uint32_t endpt0, uint32_t endpt1,
                                      t2_coord);
 }
 
+#if 0 // xxxx3333
 static inline uint32_t
 vrt_innerTrianglesCrosses(uint32_t triA_vrt0_ind, uint32_t triA_vrt1_ind,
                           uint32_t triA_vrt2_ind, uint32_t triB_vrt0_ind,
@@ -178,6 +162,7 @@ vrt_innerTrianglesCrosses(uint32_t triA_vrt0_ind, uint32_t triA_vrt1_ind,
 
   return 0;
 }
+#endif
 
 uint32_t vrt_sign_orient3d(uint32_t vrt1, uint32_t vrt2, uint32_t vrt3,
                             uint32_t vrt4, const TetMesh *mesh) {
@@ -276,7 +261,8 @@ static inline bool arrayUINT32_contains_elem(const uint32_t *array,
 //         0 otherwise.
 static inline bool is_vertex_ofTet(uint32_t vrt, uint64_t tet_ID,
                                    const TetMesh *mesh) {
-  return (mesh->tet_node[tet_ID] == vrt || mesh->tet_node[tet_ID + 1] == vrt ||
+  return (mesh->tet_node[tet_ID] == vrt || 
+          mesh->tet_node[tet_ID + 1] == vrt ||
           mesh->tet_node[tet_ID + 2] == vrt ||
           mesh->tet_node[tet_ID + 3] == vrt);
 }
@@ -1001,7 +987,6 @@ uint32_t intersectionClass_tetVrt_constr(const uint32_t *c_vrts, uint32_t tV,
                                          const uint32_t *opptF_vrts,
                                          const uint32_t *or_opptF_vrts,
                                          uint32_t opptF_same_or,
-
                                          const TetMesh *mesh) {
 
   // IF <opptF_vrts[0],opptF_vrts[1],opptF_vrts[2]> do not croesses the
@@ -1122,7 +1107,7 @@ void find_improperIntersection(const uint32_t *constr_v, const uint64_t *tets,
                                      tet_v[1], mesh);
     or_tet_v[2] = vrt_sign_orient3d(constr_v[0], constr_v[1], constr_v[2],
                                      tet_v[2], mesh);
-    if (tet_v[3] == INFINITE_VERTEX)
+    if (tet_v[3] == UINT32_MAX)
       or_tet_v[3] = 3; // Meaningless value
     else
       or_tet_v[3] = vrt_sign_orient3d(constr_v[0], constr_v[1], constr_v[2],
@@ -1138,7 +1123,7 @@ void find_improperIntersection(const uint32_t *constr_v, const uint64_t *tets,
     uint32_t iclass;
 
     // ghost-tet case
-    if (tet_v[3] == INFINITE_VERTEX)
+    if (tet_v[3] == UINT32_MAX)
       continue;
 
     // (non-ghost) tet case
@@ -1162,13 +1147,11 @@ void find_improperIntersection(const uint32_t *constr_v, const uint64_t *tets,
           tet_u = tet_v[i];
 
       iclass = intersectionClass_tetFace_constr(constr_v, tetFace_v, mesh);
-      if (iclass ==
-          1) { // IMPROPER INTERSECTION -> not interior, but face 2Doverlap.
+      if (iclass == 1) { // IMPROPER INTERSECTION -> not interior, but face 2Doverlap.
         const uint32_t f =
             tet_faceID(tetFace_v[0], tetFace_v[1], tetFace_v[2], tet_ID, mesh);
         mark_TetIntersection[tet_ind] = 10 + f; // See MACRO at the beginning.
-      } else if (iclass ==
-                 2) { // whole face PROPER INTERSECTION -> face 2Doverlap.
+      } else if (iclass == 2) { // whole face PROPER INTERSECTION -> face 2Doverlap.
         const uint32_t f =
             tet_faceID(tetFace_v[0], tetFace_v[1], tetFace_v[2], tet_ID, mesh);
         mark_TetIntersection[tet_ind] = 10 + f; // See MACRO at the beginning.
@@ -1178,7 +1161,6 @@ void find_improperIntersection(const uint32_t *constr_v, const uint64_t *tets,
     }
 
     // Assumption: no tet-face is aligned with the constraint.
-
     if (num_coplan_v == 2) {
       uint32_t k = 0, j = 0, same_or = 0;
       int non_zero_or[2];
@@ -1203,7 +1185,6 @@ void find_improperIntersection(const uint32_t *constr_v, const uint64_t *tets,
     }
 
     // Assumption: no tet-face or tet-edge is aligned with the constraint.
-
     if (num_coplan_v == 1) {
       uint32_t k = 0, same_or = 0;
       uint32_t or_oppTetFace_v[3];
@@ -1266,454 +1247,6 @@ uint32_t properIntersection_tetFace_constr(const uint32_t *c_vrts,
   // Otherwise...
   //(No proper intersection between the whole face and the constraint)
   return 0;
-}
-
-//  Input: 3 vertices of a contraint-triangle: c_vrts[3],
-//         2 vertices of a tetrahedron edge: tE_vrts[2],
-//         the other 2 vertices of the tetrahedron: opptE_vrts[2],
-//         pointer to mesh.
-// Output: returns 1 if there is a proper inetrsection (of the whole edge),
-//         0 otherwise.
-// Note. It is assumed that there are no faces of the tetrahedron
-//       that proper intersect the constraint plane.
-// Note. In the case of a ghost-tet, it is assumed that
-//       ghost vertex is opptE_vrts[1].
-uint32_t properIntersection_tetEdge_constr(const uint32_t *c_vrts,
-                                           const uint32_t *tE_vrts,
-                                           const uint32_t *opptE_vrts,
-                                           const TetMesh *mesh) {
-
-  // Necessary Cond. -> the 2 vertices of tet-edge lies on the constraint plane.
-  if (!tetedgeONconstraintplane(tE_vrts, c_vrts, mesh))
-    return 0;
-
-  // Necessary Cond. -> the 2 vertices of tet-edge vestices belong to
-  //                    the constraint (boundary included).
-  if (!vrt_pointInTriangle(tE_vrts[0], c_vrts[0], c_vrts[1], c_vrts[2], mesh) ||
-      !vrt_pointInTriangle(tE_vrts[1], c_vrts[0], c_vrts[1], c_vrts[2], mesh))
-    return 0;
-
-  // ghost-tet: the constraint can not cross the face opposite to ghost-tet,
-  //            since it is a face of the convex-hull of the mesh.
-  if (opptE_vrts[1] == UINT32_MAX)
-    return 1;
-  // LEAK -> if the hull is locally flat it must be added a further case that
-  // for current purpopsal of the algorithm is ignored.
-
-  uint32_t or_opptE0 =
-      vrt_sign_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptE_vrts[0], mesh);
-  uint32_t or_opptE1 =
-      vrt_sign_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptE_vrts[1], mesh);
-
-  // Co-planar tet-face case:
-  // IF one of opptE_vrts (cop_opp_vrt) lie on the constraint-plane
-  // AND
-  // IF both tE_vrts belong to one of the constraint sides
-  // AND
-  // IF cop_opp_vrt is in the same half-plane of the other constraint vrt w.r.t.
-  //    the aligned edge-side.
-  // THEN the constraint-tetrahedron instersection is the edge
-  //      <tE_vrts[0],tE_vrts[1]>                        -> proper intersection.
-  if (or_opptE0 == 0) {
-    uint32_t opp_c_vrt;
-    if (segment_in_triSide(tE_vrts[0], tE_vrts[1], c_vrts, &opp_c_vrt, mesh))
-      if (!vrt_same_half_plane(opptE_vrts[0], opp_c_vrt, tE_vrts[0], tE_vrts[1],
-                               mesh))
-        return 1;
-    // otherwise there is no proper intersection of dimension 1..
-    return 0;
-  }
-  if (or_opptE1 == 0) {
-    uint32_t opp_c_vrt;
-    if (segment_in_triSide(tE_vrts[0], tE_vrts[1], c_vrts, &opp_c_vrt, mesh))
-      if (!vrt_same_half_plane(opptE_vrts[1], opp_c_vrt, tE_vrts[0], tE_vrts[1],
-                               mesh))
-        return 1;
-    // otherwise there is no proper intersection of dimension 1..
-    return 0;
-  }
-
-  // Now we can assume that no tet-faces lie on the constraint-plane:
-  // neither opptE_vrts[0] and opptE_vrts[1] can lie on the constraint-plane.
-
-  // Sufficient Cond. -> IF both endpoints of opptE_vrts stay over (or under)
-  //                     the constraint plane
-  //                     THEN the only intersection in with tetEdge
-  //                                                     -> proper intersection.
-  if (or_opptE0 == or_opptE1)
-    return 1;
-
-  // Remaining tetrahedron-constraint disposition are such that:
-  // - the edge tE_vrts belong to the constraint (boundary included),
-  // - the edge opptE_vrts crosses the plane of the constraint.
-
-  // Sufficient Cond. ->  IF both the conditions hold:
-  //  (i) <tE_vrts[0],tE_vrts[1]> is aligned with a side of the constraint,
-  // (ii) the constraint vertex not aligned with <tE_vrts[0], tE_vrts[1]>
-  //      and opptE_vrts[1] do not stay in the half-space, defined by
-  //      the plane for tE_vrts[0], tE_vrts[1], opptE_vrts[0].
-  //                      THEN the tetrahedron intersects the constraint
-  //                      only in <tE_vrts[0],tE_vrts[1]> -> proper
-  //                      intersection.
-
-  // Note. since no constraint verices can belong to a tetrahedron edge,
-  //       the alignement occours only when the edge is included in to one of
-  //       the constraint sides.
-
-  // Case: <tE_vrts[0],tE_vrts[1]> is aligned with <c_vrts[0], c_vrts[1]>
-  if (vrt_pointInSegment(tE_vrts[0], c_vrts[0], c_vrts[1], mesh) &&
-      vrt_pointInSegment(tE_vrts[1], c_vrts[0], c_vrts[1], mesh) &&
-      (-1 * or_opptE0 != vrt_sign_orient3d(c_vrts[0], c_vrts[1], opptE_vrts[0],
-                                            opptE_vrts[1], mesh)))
-    return 1;
-
-  // Case: <tE_vrts[0],tE_vrts[1]> is aligned with <c_vrts[1], c_vrts[2]>
-  if (vrt_pointInSegment(tE_vrts[0], c_vrts[1], c_vrts[2], mesh) &&
-      vrt_pointInSegment(tE_vrts[1], c_vrts[1], c_vrts[2], mesh) &&
-      (-1 * or_opptE0 != vrt_sign_orient3d(c_vrts[1], c_vrts[2], opptE_vrts[0],
-                                            opptE_vrts[1], mesh)))
-    return 1;
-
-  // Case: <tE_vrts[0],tE_vrts[1]> is aligned with <c_vrts[2], c_vrts[0]>
-  if (vrt_pointInSegment(tE_vrts[0], c_vrts[2], c_vrts[0], mesh) &&
-      vrt_pointInSegment(tE_vrts[1], c_vrts[2], c_vrts[0], mesh) &&
-      (-1 * or_opptE0 != vrt_sign_orient3d(c_vrts[2], c_vrts[0], opptE_vrts[0],
-                                            opptE_vrts[1], mesh)))
-    return 1;
-
-  // Otherwise...
-  // No proper intersection between the whole edge and the constraint)
-  return 0;
-}
-
-//  Input: the 3 vertices of the contraint-triangle:
-//         c_vrts[0], c_vrts[1], c_vrts[2],
-//         the vertex of the a tetrahedron: tV,
-//         the 3 vertices of the tetrahedron face opposite to tV:
-//         opptF_vrts[0], opptF_vrts[1], opptF_vrts[2],
-//         pointer to mesh.
-// Output: returns 1 if there is a proper inetrsection (with the vertex tetVrt),
-//         0 otherwise.
-// Note. In the case of a ghost-tet, it is assumed that the ghost vertex
-//       is always in opptF_vrts[2].
-uint32_t properIntersection_tetVrt_constr(const uint32_t *c_vrts, uint32_t tV,
-                                          const uint32_t *opptF_vrts,
-                                          const TetMesh *mesh) {
-
-  // Necessary Cond. -> tV lies on the constraint plane.
-  if (!tetvrtONconstraintplane(tV, c_vrts, mesh))
-    return 0;
-
-  // Necessary Cond. -> tV belong to the constraint (boundary included).
-  if (!vrt_pointInTriangle(tV, c_vrts[0], c_vrts[1], c_vrts[2], mesh))
-    return 0;
-
-  // ghost-tet: the constraint can not cross the face opposite to ghost-tet,
-  //            since it is a face of the convex-hull of the mesh.
-  if (opptF_vrts[2] == UINT32_MAX)
-    return 1;
-
-  uint32_t or_opptF0 =
-      vrt_sign_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptF_vrts[0], mesh);
-  uint32_t or_opptF1 =
-      vrt_sign_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptF_vrts[1], mesh);
-  uint32_t or_opptF2 =
-      vrt_sign_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptF_vrts[2], mesh);
-
-  // Co-planar tet-faces:
-  // Since constraint cannot have vertices inside the co-planar tet-face
-  // IF there are no tet-edge constraint-side crossing
-  // THEN the intersection is proper,
-  // OTHERWISE is improper.
-  int a;
-  if (or_opptF0 == 0 && or_opptF1 == 0) {
-    a = 0;
-  }
-  if (or_opptF1 == 0 && or_opptF2 == 0) {
-    a = 1;
-  }
-  if (or_opptF2 == 0 && or_opptF0 == 0) {
-    a = 2;
-  }
-
-  // Co-planar edges
-  if (or_opptF0 == 0) {
-    a = 3;
-  }
-  if (or_opptF1 == 0) {
-    a = 4;
-  }
-  if (or_opptF2 == 0) {
-    a = 5;
-  }
-
-  // Sufficient Cond. -> IF the 3 vertices of oppTetFace belong to the same
-  //                     half-space defined by the constraint plane,
-  //                     THEN the unique intersection between tet and
-  //                     constraint is tV               -> proper intersection.
-  if (or_opptF0 == or_opptF1 && or_opptF1 == or_opptF2)
-    return 1;
-
-  // Remaining tetrahedron-constraint disposition are such that:
-  // - tV belong to the constraint (boundary or interior),
-  // - two vertices (tV_UNDER1,tV_UNDER2) of the tetrahedron-face opposite to
-  //   tV are in one half-plane defined by the constraint, while the other
-  //   vertex (tV_OVER) is in the other half-plane.
-
-  // Necessary Cond. -> tV belong to the constraint boundary.
-  // (If tV is in the constraint interior, the intersection is not only tV)
-  if (vrt_pointInInnerTriangle(tV, c_vrts[0], c_vrts[1], c_vrts[2], mesh))
-    return 0;
-
-  // Remaining tetrahedron-constraint disposition are such that:
-  // - tV is on the constraint boundary,
-  // - two vertices (tV_UNDER1,tV_UNDER2) of the tetrahedron-face opposite to
-  //   tV are in one half-plane defined by the constraint, while the other
-  //   vertex (tV_OVER) is in the other half-plane.
-
-  // Find the disposition of the vertex of tetrahedron-face opposite to tV
-  // w.r.t. the constraint.
-  uint32_t tV_UNDER1, tV_UNDER2, tV_OVER;
-
-  if (or_opptF0 == or_opptF1) {
-    tV_UNDER1 = opptF_vrts[0];
-    tV_UNDER2 = opptF_vrts[1];
-    tV_OVER = opptF_vrts[2];
-  } else if (or_opptF1 == or_opptF2) {
-    tV_UNDER1 = opptF_vrts[1];
-    tV_UNDER2 = opptF_vrts[2];
-    tV_OVER = opptF_vrts[0];
-  } else {
-    tV_UNDER1 = opptF_vrts[2];
-    tV_UNDER2 = opptF_vrts[0];
-    tV_OVER = opptF_vrts[1];
-  }
-
-  // Sufficient Cond. -> IF the following conditions hold:
-  //   (i) tet-edge <tV_OVER, tV_UNDER1>
-  //       do NOT cross the constraint (boundary or interior)
-  //  (ii) tet-edge <tV_OVER, tV_UNDER2>
-  //       do NOT cross the constraint (boundary or interior)
-  // (iii) tet-face <tV, tV_OVER, tV_UNDER1>
-  //       is NOT inner crossed by any constraint side,
-  //  (iv) tet-face <tV, tV_OVER, tV_UNDER2>
-  //       is NOT inner crossed by any constraint side,
-  //   (v) tet-face <tV_OVER, tV_UNDER1, tV_UNDER2>
-  //       is NOT inner crossed by any constraint side,
-  //                      THEN the unique intersection between tet
-  //                      and constraint is tV           -> proper intersection.
-
-  // Condition (i)
-  if (vrt_innerSegmentCrossesTriangle(tV_OVER, tV_UNDER1, c_vrts[0], c_vrts[1],
-                                      c_vrts[2], mesh))
-    return 0;
-
-  // Condition (ii)
-  if (vrt_innerSegmentCrossesTriangle(tV_OVER, tV_UNDER2, c_vrts[0], c_vrts[1],
-                                      c_vrts[2], mesh))
-    return 0;
-
-  // Condition (iii)
-  if (vrt_innerTrianglesCrosses(c_vrts[0], c_vrts[1], c_vrts[2], tV, tV_OVER,
-                                tV_UNDER1, mesh))
-    return 0;
-
-  // Condition (iv)
-  if (vrt_innerTrianglesCrosses(c_vrts[0], c_vrts[1], c_vrts[2], tV, tV_OVER,
-                                tV_UNDER2, mesh))
-    return 0;
-
-  // Condition (v)
-  if (vrt_innerTrianglesCrosses(c_vrts[0], c_vrts[1], c_vrts[2], tV_OVER,
-                                tV_UNDER1, tV_UNDER2, mesh))
-    return 0;
-
-  // Otherwise... (The sufficient condition is verified -> proper intersection)
-  return 1;
-}
-
-//-----------------------------------------
-// FUNCTIONS TO FIND IMPROPER INTERSECTIONS
-//-----------------------------------------
-
-//  Input: 3 vertices of the contraint-triangle: constr_vrts[3],
-//         array of indices of the tetrahedra that intersects
-//         the constraint: tet_list,
-//         number of tetrahedra that intersects the constraint: num_tet_list,
-//         array of marker for the intersections
-//         tetrahedra-constraint: mark_TetIntersection,
-//         pointer to mesh.
-// Output: by using mark_TetIntersection marks the improper
-//         intersections tetrahedra-constraint.
-// Note. It is assumed that each tetrahedron of tet_list intersects
-//       (properly or improperly) the constraint.
-void improperIntersection(const uint32_t *constr_vrts, const uint64_t *tet_list,
-                          uint64_t num_tet_list, uint32_t *mark_TetIntersection,
-                          const TetMesh *mesh) {
-  for (uint64_t list_ind = 0; list_ind < num_tet_list; list_ind++) {
-    uint64_t tet_ind = tet_list[list_ind]; // tetrahedron tet
-
-    // tet vertices
-    uint32_t tetVrts[4];
-    extract_tetVrts(tetVrts, tet_ind, mesh);
-
-    // Usefull strucutures for subsimplex of tet.
-    uint32_t tetFace_vrts[3];
-    uint32_t tetEdge_vrts[2];
-    uint32_t oppTetEdge_vrts[2];
-    uint32_t tetVrt;
-    uint32_t oppTetFace_vrts[3];
-
-    // Property: proper intersections and improper intersections
-    //           form a partition of intersections.
-
-    // ghost-tet case
-    if (tetVrts[3] == UINT32_MAX) {
-
-      // Proper intersection of dimension 2:
-      extract_tetFaceVrts(tetFace_vrts, tet_ind, 3, mesh);
-      if (properIntersection_tetFace_constr(constr_vrts, tetFace_vrts, mesh))
-        continue;
-
-      // Proper intersection of dimension 1:
-      extract_tetEdgeVrts(tetEdge_vrts, tet_ind, 0, 1, mesh);
-      extract_tetEdgeVrts(oppTetEdge_vrts, tet_ind, 2, 3, mesh);
-      if (properIntersection_tetEdge_constr(constr_vrts, tetEdge_vrts,
-                                            oppTetEdge_vrts, mesh))
-        continue;
-
-      extract_tetEdgeVrts(tetEdge_vrts, tet_ind, 1, 2, mesh);
-      extract_tetEdgeVrts(oppTetEdge_vrts, tet_ind, 0, 3, mesh);
-      if (properIntersection_tetEdge_constr(constr_vrts, tetEdge_vrts,
-                                            oppTetEdge_vrts, mesh))
-        continue;
-
-      extract_tetEdgeVrts(tetEdge_vrts, tet_ind, 2, 0, mesh);
-      extract_tetEdgeVrts(oppTetEdge_vrts, tet_ind, 1, 3, mesh);
-      if (properIntersection_tetEdge_constr(constr_vrts, tetEdge_vrts,
-                                            oppTetEdge_vrts, mesh))
-        continue;
-
-      // Proper intersection of dimension 0:
-      tetVrt = tetVrts[0];
-      extract_tetFaceVrts(oppTetFace_vrts, tet_ind, 0, mesh);
-      if (properIntersection_tetVrt_constr(constr_vrts, tetVrt, oppTetFace_vrts,
-                                           mesh))
-        continue;
-
-      tetVrt = tetVrts[1];
-      extract_tetFaceVrts(oppTetFace_vrts, tet_ind, 1, mesh);
-      if (properIntersection_tetVrt_constr(constr_vrts, tetVrt, oppTetFace_vrts,
-                                           mesh))
-        continue;
-
-      tetVrt = tetVrts[2];
-      extract_tetFaceVrts(oppTetFace_vrts, tet_ind, 2, mesh);
-      if (properIntersection_tetVrt_constr(constr_vrts, tetVrt, oppTetFace_vrts,
-                                           mesh))
-        continue;
-
-      // If no proper intersection -> the intersection is improper.
-      mark_TetIntersection[tet_ind] = IMPROPER_INTERSECTION;
-      continue;
-    }
-
-    // normal tet case (i.e. non-ghost)
-
-    // Proper intersection of dimension 2:
-    extract_tetFaceVrts(tetFace_vrts, tet_ind, 3, mesh);
-    if (properIntersection_tetFace_constr(constr_vrts, tetFace_vrts, mesh))
-      continue;
-
-    extract_tetFaceVrts(tetFace_vrts, tet_ind, 0, mesh);
-    if (properIntersection_tetFace_constr(constr_vrts, tetFace_vrts, mesh))
-      continue;
-
-    extract_tetFaceVrts(tetFace_vrts, tet_ind, 1, mesh);
-    if (properIntersection_tetFace_constr(constr_vrts, tetFace_vrts, mesh))
-      continue;
-
-    extract_tetFaceVrts(tetFace_vrts, tet_ind, 2, mesh);
-    if (properIntersection_tetFace_constr(constr_vrts, tetFace_vrts, mesh))
-      continue;
-
-    // Proper intersection of dimension 1:
-    extract_tetEdgeVrts(tetEdge_vrts, tet_ind, 0, 1, mesh);
-    extract_tetEdgeVrts(oppTetEdge_vrts, tet_ind, 2, 3, mesh);
-    if (properIntersection_tetEdge_constr(constr_vrts, tetEdge_vrts,
-                                          oppTetEdge_vrts, mesh))
-      continue;
-
-    extract_tetEdgeVrts(tetEdge_vrts, tet_ind, 1, 2, mesh);
-    extract_tetEdgeVrts(oppTetEdge_vrts, tet_ind, 3, 0, mesh);
-    if (properIntersection_tetEdge_constr(constr_vrts, tetEdge_vrts,
-                                          oppTetEdge_vrts, mesh))
-      continue;
-
-    extract_tetEdgeVrts(tetEdge_vrts, tet_ind, 2, 3, mesh);
-    extract_tetEdgeVrts(oppTetEdge_vrts, tet_ind, 0, 1, mesh);
-    if (properIntersection_tetEdge_constr(constr_vrts, tetEdge_vrts,
-                                          oppTetEdge_vrts, mesh))
-      continue;
-
-    extract_tetEdgeVrts(tetEdge_vrts, tet_ind, 3, 0, mesh);
-    extract_tetEdgeVrts(oppTetEdge_vrts, tet_ind, 1, 2, mesh);
-    if (properIntersection_tetEdge_constr(constr_vrts, tetEdge_vrts,
-                                          oppTetEdge_vrts, mesh))
-      continue;
-
-    extract_tetEdgeVrts(tetEdge_vrts, tet_ind, 1, 3, mesh);
-    extract_tetEdgeVrts(oppTetEdge_vrts, tet_ind, 0, 2, mesh);
-    if (properIntersection_tetEdge_constr(constr_vrts, tetEdge_vrts,
-                                          oppTetEdge_vrts, mesh))
-      continue;
-
-    extract_tetEdgeVrts(tetEdge_vrts, tet_ind, 2, 0, mesh);
-    extract_tetEdgeVrts(oppTetEdge_vrts, tet_ind, 3, 1, mesh);
-    if (properIntersection_tetEdge_constr(constr_vrts, tetEdge_vrts,
-                                          oppTetEdge_vrts, mesh))
-      continue;
-
-    // If there is a common edge between tet and constraint:
-    // IMPROPER INTERSECTION
-    if (segment_is_triSide(tetVrts[0], tetVrts[1], constr_vrts) ||
-        segment_is_triSide(tetVrts[1], tetVrts[2], constr_vrts) ||
-        segment_is_triSide(tetVrts[2], tetVrts[3], constr_vrts) ||
-        segment_is_triSide(tetVrts[3], tetVrts[0], constr_vrts) ||
-        segment_is_triSide(tetVrts[1], tetVrts[3], constr_vrts) ||
-        segment_is_triSide(tetVrts[0], tetVrts[2], constr_vrts)) {
-      mark_TetIntersection[tet_ind] = IMPROPER_INTERSECTION;
-      continue;
-    }
-
-    // Proper intersection of dimension 0:
-    tetVrt = tetVrts[0];
-    extract_tetFaceVrts(oppTetFace_vrts, tet_ind, 0, mesh);
-    if (properIntersection_tetVrt_constr(constr_vrts, tetVrt, oppTetFace_vrts,
-                                         mesh))
-      continue;
-
-    tetVrt = tetVrts[1];
-    extract_tetFaceVrts(oppTetFace_vrts, tet_ind, 1, mesh);
-    if (properIntersection_tetVrt_constr(constr_vrts, tetVrt, oppTetFace_vrts,
-                                         mesh))
-      continue;
-
-    tetVrt = tetVrts[2];
-    extract_tetFaceVrts(oppTetFace_vrts, tet_ind, 2, mesh);
-    if (properIntersection_tetVrt_constr(constr_vrts, tetVrt, oppTetFace_vrts,
-                                         mesh))
-      continue;
-
-    tetVrt = tetVrts[3];
-    extract_tetFaceVrts(oppTetFace_vrts, tet_ind, 3, mesh);
-    if (properIntersection_tetVrt_constr(constr_vrts, tetVrt, oppTetFace_vrts,
-                                         mesh))
-      continue;
-
-    // If no proper intersection -> the intersection is improper.
-    mark_TetIntersection[tet_ind] = IMPROPER_INTERSECTION;
-  }
 }
 
 //------------------------------------------------------------------------
@@ -1822,26 +1355,20 @@ uint64_t *intersections_TetVrtOnConstraintSide(
     // opposite to v_start.
 
     // Edge < v_oppf_inds[0] , v_oppf_inds[1] >
-    if (vrt_innerSegmentsCross(v_curr, v_stop, v_oppf_inds[0], v_oppf_inds[1],
-                               mesh)) {
-      fill_connecting_vrts(connecting_vrts, 2, v_oppf_inds[0], v_oppf_inds[1],
-                           UINT32_MAX);
+    if (vrt_innerSegmentsCross(v_curr, v_stop, v_oppf_inds[0], v_oppf_inds[1], mesh)) {
+      fill_connecting_vrts(connecting_vrts, 2, v_oppf_inds[0], v_oppf_inds[1], UINT32_MAX);
       break;
     }
 
     // Edge < v_oppf_inds[1] , v_oppf_inds[2] >
-    if (vrt_innerSegmentsCross(v_curr, v_stop, v_oppf_inds[1], v_oppf_inds[2],
-                               mesh)) {
-      fill_connecting_vrts(connecting_vrts, 2, v_oppf_inds[1], v_oppf_inds[2],
-                           UINT32_MAX);
+    if (vrt_innerSegmentsCross(v_curr, v_stop, v_oppf_inds[1], v_oppf_inds[2], mesh)) {
+      fill_connecting_vrts(connecting_vrts, 2, v_oppf_inds[1], v_oppf_inds[2], UINT32_MAX);
       break;
     }
 
     // Edge < v_oppf_inds[2] , v_oppf_inds[0] >
-    if (vrt_innerSegmentsCross(v_curr, v_stop, v_oppf_inds[2], v_oppf_inds[0],
-                               mesh)) {
-      fill_connecting_vrts(connecting_vrts, 2, v_oppf_inds[2], v_oppf_inds[0],
-                           UINT32_MAX);
+    if (vrt_innerSegmentsCross(v_curr, v_stop, v_oppf_inds[2], v_oppf_inds[0], mesh)) {
+      fill_connecting_vrts(connecting_vrts, 2, v_oppf_inds[2], v_oppf_inds[0], UINT32_MAX);
       break;
     }
 
@@ -1850,21 +1377,18 @@ uint64_t *intersections_TetVrtOnConstraintSide(
 
     // Vertex v_oppf_inds[0]
     if (vrt_pointInInnerSegment(v_oppf_inds[0], v_curr, v_stop, mesh)) {
-      fill_connecting_vrts(connecting_vrts, 1, v_oppf_inds[0], UINT32_MAX,
-                           UINT32_MAX);
+      fill_connecting_vrts(connecting_vrts, 1, v_oppf_inds[0], UINT32_MAX, UINT32_MAX);
       break;
     }
 
     // Vertex v_oppf_inds[1]
     if (vrt_pointInInnerSegment(v_oppf_inds[1], v_curr, v_stop, mesh)) {
-      fill_connecting_vrts(connecting_vrts, 1, v_oppf_inds[1], UINT32_MAX,
-                           UINT32_MAX);
+      fill_connecting_vrts(connecting_vrts, 1, v_oppf_inds[1], UINT32_MAX, UINT32_MAX);
       break;
     }
 
     // Vertex v_oppf_inds[2]
     if (vrt_pointInInnerSegment(v_oppf_inds[2], v_curr, v_stop, mesh)) {
-
       fill_connecting_vrts(connecting_vrts, 1, v_oppf_inds[2], UINT32_MAX,
                            UINT32_MAX);
       break;
@@ -1967,7 +1491,6 @@ uint64_t *intersections_TetEdgeCrossConstraintSide(
     // Check if the case (3'):
     // one of the vertices of the side opposite to tet_cutted_edge is v_stop.
     if (arrayUINT32_contains_elem(v_oppe_inds, 2, v_stop)) {
-
       fill_connecting_vrts(connecting_vrts, 1, v_stop, UINT32_MAX, UINT32_MAX);
       break;
     }
@@ -1983,7 +1506,6 @@ uint64_t *intersections_TetEdgeCrossConstraintSide(
                                              mesh) &&
         vrtsInSameHalfSpace(tet_cutted_edge[1], v_start, v_oppe_inds[0],
                             v_oppe_inds[1], tet_cutted_edge[0], mesh)) {
-
       fill_connecting_vrts(connecting_vrts, 3, v_oppe_inds[0], v_oppe_inds[1],
                            tet_cutted_edge[0]);
       break;
@@ -1996,7 +1518,6 @@ uint64_t *intersections_TetEdgeCrossConstraintSide(
                                              mesh) &&
         vrtsInSameHalfSpace(tet_cutted_edge[0], v_start, v_oppe_inds[0],
                             v_oppe_inds[1], tet_cutted_edge[1], mesh)) {
-
       fill_connecting_vrts(connecting_vrts, 3, v_oppe_inds[0], v_oppe_inds[1],
                            tet_cutted_edge[1]);
       break;
@@ -2036,7 +1557,6 @@ uint64_t *intersections_TetEdgeCrossConstraintSide(
     if (vrt_pointInInnerSegment(v_oppe_inds[1], v_start, v_stop, mesh) &&
         vrt_same_half_plane(v_oppe_inds[1], v_stop, tet_cutted_edge[0],
                             tet_cutted_edge[1], mesh)) {
-
       fill_connecting_vrts(connecting_vrts, 1, v_oppe_inds[1], UINT32_MAX,
                            UINT32_MAX);
       break;
@@ -2053,7 +1573,6 @@ uint64_t *intersections_TetEdgeCrossConstraintSide(
                                v_oppe_inds[0], mesh) &&
         vrt_same_half_plane(v_oppe_inds[0], v_stop, tet_cutted_edge[0],
                             tet_cutted_edge[1], mesh)) {
-
       fill_connecting_vrts(connecting_vrts, 2, tet_cutted_edge[0],
                            v_oppe_inds[0], UINT32_MAX);
       break;
@@ -2169,7 +1688,6 @@ uint32_t intersections_TetFacePiercedConstraintSide(
 
   // Check if case (3'): v_opp is v_stop.
   if (v_opp_ind == v_stop) {
-
     fill_connecting_vrts(connecting_vrts, 1, v_stop, UINT32_MAX, UINT32_MAX);
     return isNew;
   }
@@ -2517,7 +2035,7 @@ static inline uint32_t constrInterior_found(const TetMesh *mesh,
                                             uint64_t tet_ind,
                                             uint32_t *mark_TetIntersection) {
 
-  // Check if the tetrahedron has been already visited.
+  // tetrahedron has been already visited ?
   if (mark_TetIntersection[tet_ind] != 0)
     return 0;
 
@@ -2532,7 +2050,6 @@ static inline uint32_t constrInterior_found(const TetMesh *mesh,
     mark_TetIntersection[tet_ind] = IMPROPER_INTERSECTION_COUNTED;
   }
   if (result == 3) { // A tet-face (2D)overlaps with the constraint.
-
     if (f_ID == 0)
       mark_TetIntersection[tet_ind] = OVERLAP2D_F0_COUNTED;
     else if (f_ID == 1)
@@ -2565,9 +2082,7 @@ uint32_t constrInterior_firstStep(const TetMesh *mesh,
                                   uint64_t *adj_tet_ind_return) {
   // Cycle over the tetrahedra adjacent to bnd_tet.
   for (uint64_t i = 0; i < 4; i++) {
-
     uint64_t adj_tet_ind = mesh->tet_neigh[4 * bnd_tet_ind + i] >> 2;
-
     if (constrInterior_found(mesh, constraints_verts, adj_tet_ind,
                              mark_TetIntersection)) {
       *adj_tet_ind_return = adj_tet_ind;

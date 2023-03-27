@@ -95,10 +95,10 @@ void TetMesh::init() {
     std::swap(i, j); // Tets must have positive volume
 
   const uint32_t base_tet[] = {l, k, j, i,
-                               l, j, k, INFINITE_VERTEX,
-                               l, k, i, INFINITE_VERTEX,
-                               l, i, j, INFINITE_VERTEX,
-                               k, j, i, INFINITE_VERTEX};
+                               l, j, k, UINT32_MAX,
+                               l, k, i, UINT32_MAX,
+                               l, i, j, UINT32_MAX,
+                               k, j, i, UINT32_MAX};
   const uint64_t base_neigh[] = {19, 15, 11, 7, 18, 10, 13, 3, 17, 14,
                                  5,  2,  16, 6, 9,  1,  12, 8, 4,  0};
 
@@ -147,7 +147,7 @@ void TetMesh::removeDelTets() {
         tet_neigh[to_delete + j] = neigh;
         tet_neigh[neigh] = to_delete + j;
 
-        if (tet_node[lastTet + j] != INFINITE_VERTEX &&
+        if (tet_node[lastTet + j] != UINT32_MAX &&
             vertices[tet_node[lastTet + j]].inc_tet == lastTet >> 2)
           vertices[tet_node[lastTet + j]].inc_tet = to_delete >> 2;
       }
@@ -158,14 +158,14 @@ void TetMesh::removeDelTets() {
 }
 
 uint64_t TetMesh::searchTetrahedron(uint64_t tet, const uint32_t v_id) {
-  if (tet_node[tet + 3] == INFINITE_VERTEX)
+  if (tet_node[tet + 3] == UINT32_MAX)
     tet = getNeighbor(tet, 3);
 
   const double *vc = vertices[v_id].coord;
 
   for (uint64_t f0 = 4;;) {
     const uint32_t *Node = tet_node + tet;
-    if (Node[3] == INFINITE_VERTEX)
+    if (Node[3] == UINT32_MAX)
       return tet;
 
     const uint64_t *Neigh = tet_neigh + tet;
@@ -233,7 +233,7 @@ double TetMesh::vertexInTetSphere(uint64_t tet, uint32_t v_id) {
   const double aey = e[1] - a[1];
   const double aez = e[2] - a[2];
 
-  if (Node[3] == INFINITE_VERTEX) {
+  if (Node[3] == UINT32_MAX) {
     double det = aex * SubDet[0] + aey * SubDet[1] + aez * SubDet[2];
     if (fabs(det) > o3d_static_filter)
       return det;
@@ -295,16 +295,13 @@ void TetMesh::deleteInSphereTets(uint64_t tet, const uint32_t v_id) {
   Del_deleted[Del_num_deleted++] = tet;
   tet_subdet[tet + 3] = -1.0;
 
-  uint64_t first_deleted_pos = Del_num_deleted - 1;
-
   for (start = Del_num_deleted - 1; start < Del_num_deleted; start++) {
     uint64_t tet = Del_deleted[start];
     uint64_t *Neigh = tet_neigh + tet;
     uint32_t *Node = tet_node + tet;
 
     if (Del_num_tmp + 4 > Del_size_tmp) {
-      Del_tmp =
-          (DelTmp *)realloc(Del_tmp, 2 * Del_num_tmp * sizeof(Del_tmp[0]));
+      Del_tmp = (DelTmp *)realloc(Del_tmp, 2 * Del_num_tmp * sizeof(Del_tmp[0]));
       Del_size_tmp = 2 * Del_num_tmp;
     }
 
@@ -402,7 +399,7 @@ void TetMesh::tetrahedrizeHole(uint64_t *tet) {
 
     // set all the incidence vertex-tetrahedron relation of the vertices
     // of the current tetrahedron to the tetrahedron itself
-    if (tet_node[tet + 3] != INFINITE_VERTEX) // Mod.1
+    if (tet_node[tet + 3] != UINT32_MAX) // Mod.1
       for (uint32_t j = 0; j < 4; j++)
         vertices[tet_node[tet + j]].inc_tet = tet >> 2;
   }
@@ -462,7 +459,7 @@ void TetMesh::compute_subDet(const uint64_t tet) {
   double *b = vertices[Node[1]].coord;
   double *c = vertices[Node[2]].coord;
 
-  if (Node[3] != INFINITE_VERTEX) {
+  if (Node[3] != UINT32_MAX) {
     double *d = vertices[Node[3]].coord;
     double ad[4];
 
@@ -529,7 +526,7 @@ void count_incTet(uint64_t tet_ind, const uint32_t central_vertex_ind,
       // ghost vertex is always in the last slot of the tetrahedron vertices.
 
       if (mesh->mark_tetrahedra[neigh_tet_ind] == 1 ||
-          mesh->tet_node[4 * neigh_tet_ind + 3] == INFINITE_VERTEX)
+          mesh->tet_node[4 * neigh_tet_ind + 3] == UINT32_MAX)
         continue;
 
       mesh->mark_tetrahedra[neigh_tet_ind] = 1;
@@ -712,7 +709,7 @@ void TetMesh::tetrahedrize() {
     tetrahedrizeHole(&ct);
 
     uint64_t Tet2update = ct;
-    if (tet_node[Tet2update + 3] == INFINITE_VERTEX)
+    if (tet_node[Tet2update + 3] == UINT32_MAX)
       Tet2update = tet_neigh[Tet2update + 3];
 
     vertices[i].inc_tet = Tet2update >> 2;

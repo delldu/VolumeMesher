@@ -519,8 +519,9 @@ uint64_t BSPcomplex::removing_ghost_tets(const TetMesh *mesh,
     if (IS_GHOST_TET(tet_i)) {
       new_order[tet_i] = UINT64_MAX;
       ghost_tet_count++;
-    } else
+    } else {
       new_order[tet_i] = tet_i - ghost_tet_count;
+    }
   }
   return mesh->tet_num - ghost_tet_count;
 }
@@ -575,18 +576,19 @@ uint64_t BSPcomplex::add_tetEdge(const TetMesh *mesh, uint32_t e0, uint32_t e1,
 }
 
 //  Input: three face (triangle) vertices: v0, v1, v2,
-//         index of a BSPcell (w.r.t. vector cells) owning the face: cell_ind,
+//         index of a BSPcell (w.r.t. vector cells) owning the face: cell_i,
 //         index of a BSPcell (w.r.t. vector cells) faced at the previous one
 //         throught the face, if it does not exists (i.e. the previous cell is
 //         a complex boundary cell) then it is UINT64_MAX: adjcell_i.
 // Output: returns the index (w.r.t. the vector faces) of the new BSPface.
 inline uint64_t BSPcomplex::add_tetFace(uint32_t v0, uint32_t v1, uint32_t v2,
-                                        uint64_t cell_ind,
+                                        uint64_t cell_i,
                                         uint64_t adjcell_i) {
   // Note. adjCell==UINT64_MAX -> convex-hull face.
-  faces.push_back(BSPface(v0, v1, v2, cell_ind, adjcell_i));
+  faces.push_back(BSPface(v0, v1, v2, cell_i, adjcell_i));
   uint64_t face_i = faces.size() - 1;
-  cells[cell_ind].faces.push_back(face_i);
+  cells[cell_i].faces.push_back(face_i);
+
   if (!IS_GHOST_CELL(adjcell_i))
     cells[adjcell_i].faces.push_back(face_i);
 
@@ -615,7 +617,6 @@ inline bool BSPcomplex::tet_face_isNew(uint64_t tet_i, uint64_t adjtet_i,
 inline void BSPcomplex::fill_face_colour(uint64_t tet_i, uint64_t face_i,
                                          const uint32_t **map_fi,
                                          const uint32_t *num_map_fi) {
-
   if (num_map_fi[tet_i] == 0)
     faces[face_i].colour = WHITE;
   else {
@@ -686,8 +687,8 @@ BSPcomplex::BSPcomplex(const TetMesh *mesh, const Constraint *_constraints,
   for (uint64_t tet_i = 0; tet_i < mesh->tet_num; tet_i++) {
     // Here each BSPcell is a non-ghost tetrahedron of the mesh:
     // consider a tetrahedron (tet) whose index is tet_i.
-    uint64_t cell_ind = new_order[tet_i];
-    if (IS_GHOST_CELL(cell_ind))
+    uint64_t cell_i = new_order[tet_i];
+    if (IS_GHOST_CELL(cell_i))
       continue; // Skip ghost-tet
 
     // Create BSPcells from tetrahedra by following increasing indexing:
@@ -696,9 +697,9 @@ BSPcomplex::BSPcomplex(const TetMesh *mesh, const Constraint *_constraints,
 
     // Constraint improperly intersecated by tet.
     if (num_map[tet_i] > 0) {
-      cells[cell_ind].constraints.resize(num_map[tet_i]);
+      cells[cell_i].constraints.resize(num_map[tet_i]);
       for (uint32_t i = 0; i < num_map[tet_i]; i++)
-        cells[cell_ind].constraints[i] = map[tet_i][i];
+        cells[cell_i].constraints[i] = map[tet_i][i];
     }
 
     // Adding BSPface and BSPedges to create a BSPcell conformed to tetrahedron.
@@ -714,7 +715,7 @@ BSPcomplex::BSPcomplex(const TetMesh *mesh, const Constraint *_constraints,
     adjtet_i = mesh->tet_neigh[4 * tet_i + 3] >> 2;
     adjcell_i = new_order[adjtet_i];
     if (tet_face_isNew(tet_i, adjtet_i, adjcell_i)) {
-      face_i = add_tetFace(v[0], v[1], v[2], cell_ind, adjcell_i);
+      face_i = add_tetFace(v[0], v[1], v[2], cell_i, adjcell_i);
       // At most three edges may have to be created <v0,v1>, <v1,v2>, <v2,v0>.
       tet_edge[0] = add_tetEdge(mesh, v[0], v[1], tet_i, new_order);
       assign_edge_to_face(tet_edge[0], face_i);
@@ -725,7 +726,7 @@ BSPcomplex::BSPcomplex(const TetMesh *mesh, const Constraint *_constraints,
       // Color and coplanar-constraints
       fill_face_colour(tet_i, face_i, map_f3, num_map_f3);
     } else {
-      face_i = faceSharedWithCell(cell_ind, adjcell_i);
+      face_i = faceSharedWithCell(cell_i, adjcell_i);
       BSPface &face = faces[face_i];
       tet_edge[0] = find_face_edge(face, v[0], v[1]);
       tet_edge[1] = find_face_edge(face, v[1], v[2]);
@@ -735,7 +736,7 @@ BSPcomplex::BSPcomplex(const TetMesh *mesh, const Constraint *_constraints,
     adjtet_i = mesh->tet_neigh[4 * tet_i + 2] >> 2;
     adjcell_i = new_order[adjtet_i];
     if (tet_face_isNew(tet_i, adjtet_i, adjcell_i)) {
-      face_i = add_tetFace(v[3], v[0], v[1], cell_ind, adjcell_i);
+      face_i = add_tetFace(v[3], v[0], v[1], cell_i, adjcell_i);
       // At most two edges may have to be created <v3,v0>, <v1,v3>.
       tet_edge[4] = add_tetEdge(mesh, v[1], v[3], tet_i, new_order);
       assign_edge_to_face(tet_edge[4], face_i);
@@ -746,7 +747,7 @@ BSPcomplex::BSPcomplex(const TetMesh *mesh, const Constraint *_constraints,
       // Color and coplanar-constraints
       fill_face_colour(tet_i, face_i, map_f2, num_map_f2);
     } else {
-      face_i = faceSharedWithCell(cell_ind, adjcell_i);
+      face_i = faceSharedWithCell(cell_i, adjcell_i);
       BSPface &face = faces[face_i];
       tet_edge[3] = find_face_edge(face, v[3], v[0]);
       tet_edge[4] = find_face_edge(face, v[1], v[3]);
@@ -755,7 +756,7 @@ BSPcomplex::BSPcomplex(const TetMesh *mesh, const Constraint *_constraints,
     adjtet_i = mesh->tet_neigh[4 * tet_i + 1] >> 2;
     adjcell_i = new_order[adjtet_i];
     if (tet_face_isNew(tet_i, adjtet_i, adjcell_i)) {
-      face_i = add_tetFace(v[2], v[3], v[0], cell_ind, adjcell_i);
+      face_i = add_tetFace(v[2], v[3], v[0], cell_i, adjcell_i);
       // At most one edges may have to be created <v2,v3>.
       tet_edge[5] = add_tetEdge(mesh, v[2], v[3], tet_i, new_order);
       assign_edge_to_face(tet_edge[5], face_i);
@@ -765,14 +766,14 @@ BSPcomplex::BSPcomplex(const TetMesh *mesh, const Constraint *_constraints,
       // Color and coplanar-constraints
       fill_face_colour(tet_i, face_i, map_f1, num_map_f1);
     } else {
-      face_i = faceSharedWithCell(cell_ind, adjcell_i);
+      face_i = faceSharedWithCell(cell_i, adjcell_i);
       tet_edge[5] = find_face_edge(faces[face_i], v[2], v[3]);
     }
     // --- face <v1,v2,v3> -----------------------------
     adjtet_i = mesh->tet_neigh[4 * tet_i] >> 2;
     adjcell_i = new_order[adjtet_i];
     if (tet_face_isNew(tet_i, adjtet_i, adjcell_i)) {
-      face_i = add_tetFace(v[1], v[2], v[3], cell_ind, adjcell_i);
+      face_i = add_tetFace(v[1], v[2], v[3], cell_i, adjcell_i);
       // No edges have to be created.
       // <v1,v2> is tet_edge[1], <v2,v3> is tet_edge[5], <v3,v1> is tet_edge[4].
       assign_edge_to_face(tet_edge[1], face_i);
@@ -802,25 +803,25 @@ inline void BSPcomplex::move_edge(uint64_t edge_face_ind, uint64_t face_i,
 }
 
 //  Input: index of a BSPface (w.r.t. vector cells[cell].faces): face_cell_ind,
-//         index of two BSPcells (w.r.t. vector cells): cell_ind, newCell_ind.
+//         index of two BSPcells (w.r.t. vector cells): cell_i, newCell_ind.
 // Output: nothing.
-// Note. face is removed from cells[cell_ind] and assigned to
+// Note. face is removed from cells[cell_i] and assigned to
 // cells[newCell_ind].
-inline void BSPcomplex::move_face(uint64_t face_cell_ind, uint64_t cell_ind,
+inline void BSPcomplex::move_face(uint64_t face_cell_ind, uint64_t cell_i,
                                   uint64_t newCell_ind) {
-  uint64_t face_i = cells[cell_ind].faces[face_cell_ind];
-  faces[face_i].exchange_conn_cell(cell_ind, newCell_ind);
+  uint64_t face_i = cells[cell_i].faces[face_cell_ind];
+  faces[face_i].exchange_conn_cell(cell_i, newCell_ind);
   cells[newCell_ind].faces.push_back(face_i);
-  cells[cell_ind].removeFace(face_cell_ind);
+  cells[cell_i].removeFace(face_cell_ind);
 }
 
 //  Input: index of a constraint (w.r.t. vector cells[cell].constraints):
 //         constr_cell_ind,
-//         index of a BSPcells (w.r.t. vector cells): cell_ind.
+//         index of a BSPcells (w.r.t. vector cells): cell_i.
 // Output: nothing.
 inline void BSPcomplex::remove_constraint(uint32_t constr_cell_ind,
-                                          uint64_t cell_ind) {
-  BSPcell &cell = cells[cell_ind];
+                                          uint64_t cell_i) {
+  BSPcell &cell = cells[cell_i];
   size_t last_ind = cell.constraints.size() - 1;
   if (constr_cell_ind != last_ind)
     cell.constraints[constr_cell_ind] = cell.constraints[last_ind];
@@ -882,17 +883,17 @@ void BSPcomplex::edgesPartition(uint64_t face_i, uint64_t newface_i) {
 }
 
 //  Input: index of the splitted BSPcell (w.r.t. vector cells) that is going
-//         to be turned into the downSubcell: cell_ind,
+//         to be turned into the downSubcell: cell_i,
 //         index of the upSubcell (w.r.t. vector cells): newCell_ind,
 //         vector of the indices of the vertices (w.r.t. vector vertices)
 //         of the BSPcell to which the BSPface belong to: cell_vrts.
 // Output: nothing.
-void BSPcomplex::facesPartition(uint64_t cell_ind, uint64_t newCell_ind,
+void BSPcomplex::facesPartition(uint64_t cell_i, uint64_t newCell_ind,
                                 const vector<uint32_t> &cell_vrts) {
   // Faces whose indices (w.r.t. vector faces) are listed in
-  // cells[cell_ind].faces have to be partitioned between
+  // cells[cell_i].faces have to be partitioned between
   // upSubcell (i.e. cells[newCell]) and downSubcell (i.e. cells[cell]).
-  BSPcell &cell = cells[cell_ind];
+  BSPcell &cell = cells[cell_i];
   uint64_t num_faces = cell.faces.size();
   uint64_t face_i;
   for (uint64_t f = 0; f < num_faces; f++) {
@@ -913,12 +914,12 @@ void BSPcomplex::facesPartition(uint64_t cell_ind, uint64_t newCell_ind,
     // IF one of the face vertices is OVER the constraint-plane (vrtsOVER>0),
     // the face is assigned to the upSubcell (i.e. cells[newCell]).
     if (vrtsOVER > 0) {
-      move_face(f, cell_ind, newCell_ind);
+      move_face(f, cell_i, newCell_ind);
       f--;
       num_faces--;
     }
     // OTHERWISE
-    // faces[face_i] goes to down-subcell (i.e. remain to cells[cell_ind])
+    // faces[face_i] goes to down-subcell (i.e. remain to cells[cell_i])
     // indeed, all its vertices have non-positive cell_vrts_orient.
   }
 }
@@ -1159,24 +1160,24 @@ void BSPcomplex::add_edges_toCommFaceEdges(BSPface &face,
 
 //  Input: index of the constraint splitting the BSPcell: constr,
 //         index of the splitted BSPcell (w.r.t. vector cells) that is going
-//         to be turned into the downSubcell: cell_ind,
+//         to be turned into the downSubcell: cell_i,
 //         index of the upSubcell (w.r.t. vector cells): newCell_ind,
 //         vector of the indices of the vertices (w.r.t. vector vertices)
 //         of the BSPcell to which the BSPface belong to: cell_vrts.
 // Output: nothing.
-void BSPcomplex::add_commonFace(uint32_t constr, uint64_t cell_ind,
+void BSPcomplex::add_commonFace(uint32_t constr, uint64_t cell_i,
                                 uint64_t newCell_ind,
                                 const vector<uint32_t> &cell_vrts,
                                 const vector<uint64_t> &cell_edges) {
   // Common face between up-subcell and down-subcell: the edge of that face
-  // are those of cells[cell_ind] that have vrts_orBin = 0.
+  // are those of cells[cell_i] that have vrts_orBin = 0.
   uint32_t constr_ID = 3 * constr;
   uint32_t colour = GREY;
   if (is_virtual(constr))
     colour = WHITE;
   faces.push_back(
       BSPface(constraints_verts[constr_ID], constraints_verts[constr_ID + 1],
-              constraints_verts[constr_ID + 2], cell_ind, newCell_ind, colour));
+              constraints_verts[constr_ID + 2], cell_i, newCell_ind, colour));
   uint64_t face_i = faces.size() - 1;
 
   uint64_t edge_i, num_commFace_edges = 0;
@@ -1201,7 +1202,7 @@ void BSPcomplex::add_commonFace(uint32_t constr, uint64_t cell_ind,
   for (uint64_t e = 0; e < commFace_edges.size(); e++)
     edges[commFace_edges[e]].conn_face_0 = face_i;
 
-  cells[cell_ind].faces.push_back(face_i);
+  cells[cell_i].faces.push_back(face_i);
   cells[newCell_ind].faces.push_back(face_i);
 
   fixCommonFaceOrientation(face_i);
@@ -1454,11 +1455,11 @@ void BSPcomplex::splitEdge(uint64_t edge_id, uint32_t constr) {
 
 //  Input: index of a BSPface: face_i,
 //         index of a constraint that intersects the face interior: constr,
-//         index of the BSPcell to which the BSPface belongs to: cell_ind,
+//         index of the BSPcell to which the BSPface belongs to: cell_i,
 //         a vector with the indices of the face vertices: face_vrts.
 // Output: nothing.
 void BSPcomplex::splitFace(uint64_t face_i, uint32_t constr,
-                           uint64_t cell_ind,
+                           uint64_t cell_i,
                            const vector<uint32_t> &face_vrts) {
   BSPface &face = faces[face_i];
 
@@ -1499,9 +1500,9 @@ void BSPcomplex::splitFace(uint64_t face_i, uint32_t constr,
   add_commonEdge(constr, face_i, newface_i, zero_vrts);
 }
 
-void BSPcomplex::find_coplanar_constraints(uint64_t cell_ind, uint32_t constr,
+void BSPcomplex::find_coplanar_constraints(uint64_t cell_i, uint32_t constr,
                                            vector<uint32_t> &coplanar_c) {
-  BSPcell &cell = cells[cell_ind];
+  BSPcell &cell = cells[cell_i];
   uint32_t constr_ID = 3 * constr;
   uint32_t c0 = constraints_verts[constr_ID];
   uint32_t c1 = constraints_verts[constr_ID + 1];
@@ -1553,15 +1554,15 @@ void BSPcomplex::find_coplanar_constraints(uint64_t cell_ind, uint32_t constr,
   }
 }
 
-//  Input: index of a BSPcell: cell_ind.
+//  Input: index of a BSPcell: cell_i.
 // Output: nothing.
 // Note. it is assumed that the BScell is (only) convex,
 //       strictly convexity is not guaranteed.
-void BSPcomplex::splitCell(uint64_t cell_ind) {
+void BSPcomplex::splitCell(uint64_t cell_i) {
 
   // Extract the last contraint that intersect the cell and remove it from
   // the list. The cell will be splitted by that constraint.
-  BSPcell &cell = cells[cell_ind];
+  BSPcell &cell = cells[cell_i];
   uint32_t constr = cell.constraints.back();
   uint32_t constr_ID = 3 * constr;
   uint32_t c0 = constraints_verts[constr_ID];
@@ -1572,7 +1573,7 @@ void BSPcomplex::splitCell(uint64_t cell_ind) {
 
   // Search for coplanar constraints.
   vector<uint32_t> coplanar_constr;
-  find_coplanar_constraints(cell_ind, constr, coplanar_constr);
+  find_coplanar_constraints(cell_i, constr, coplanar_constr);
 
   // Distinguish between two mutually exclusive cases:
   // CASE. NO SPLIT: only cell boundary elements (face or edge) lie on the
@@ -1632,7 +1633,7 @@ void BSPcomplex::splitCell(uint64_t cell_ind) {
     if (constraint_innerIntersects_face(face_vrts)) {
       // Here the face is splitted.
       // The intersection between face and constraint-plane is a new edge.
-      splitFace(face_i, constr, cell_ind, face_vrts);
+      splitFace(face_i, constr, cell_i, face_vrts);
 
       // Add new edge (the face-slpitting one) to cell_edges
       cell_edges.push_back(edges.size() - 1);
@@ -1655,9 +1656,9 @@ void BSPcomplex::splitCell(uint64_t cell_ind) {
   cells.push_back(BSPcell());
   uint64_t newCell_ind = cells.size() - 1;
 
-  facesPartition(cell_ind, newCell_ind, cell_vrts);
+  facesPartition(cell_i, newCell_ind, cell_vrts);
   // Add common face between up-subcell and down-subcell.
-  add_commonFace(constr, cell_ind, newCell_ind, cell_vrts, cell_edges);
+  add_commonFace(constr, cell_i, newCell_ind, cell_vrts, cell_edges);
 
   // If there are coplanar constraints (to the one used for splitting) those
   // constraints have to be aded to the common face.
@@ -1671,7 +1672,7 @@ void BSPcomplex::splitCell(uint64_t cell_ind) {
   // Constraint that have to be partitioned between up-subcell
   // and down-subcell are: cells[cell].constarints.
 
-  constraintsPartition(constr, cell_ind, newCell_ind, cell_vrts);
+  constraintsPartition(constr, cell_i, newCell_ind, cell_vrts);
 }
 
 
