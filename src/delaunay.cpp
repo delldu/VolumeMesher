@@ -23,6 +23,16 @@ TetMesh::~TetMesh() {
   free(mark_tetrahedra);
 }
 
+void TetMesh::reserve(uint32_t ntet) {
+  ntet += tet_num;
+  tet_neigh = (uint64_t *)realloc(tet_neigh, ntet * 4 * sizeof(uint64_t));
+  tet_subdet = (double *)realloc(tet_subdet, ntet * 4 * sizeof(double));
+  tet_node = (uint32_t *)realloc(tet_node, ntet * 4 * sizeof(uint32_t));
+  tet_size = ntet;
+  mark_tetrahedra =
+      (uint32_t *)realloc(mark_tetrahedra, ntet * sizeof(uint32_t)); // Mod.1
+}
+
 void TetMesh::init() {
   uint32_t n = num_vertices;
 

@@ -423,7 +423,7 @@ bool BSPcomplex::coplanar_constraint_innerIntersects_face(
         const BSPedge &edge = edges[fedges[e]];
         const genericPoint *ev1 = vertices[edge.vertices[0]];
         const genericPoint *ev2 = vertices[edge.vertices[1]];
-        if (pointInInnerSegment(*vertices[tri[i]], *ev1, *ev2, xyz)) {
+        if (genericPoint::pointInInnerSegment(*vertices[tri[i]], *ev1, *ev2, xyz)) {
           mask |= (1 << i);
           break;
         }
@@ -450,7 +450,7 @@ bool BSPcomplex::coplanar_constraint_innerIntersects_face(
       vid = (vid == edge.vertices[0])? edge.vertices[1] : edge.vertices[0];
       const genericPoint *ev1 = vertices[tri[ti0]];
       const genericPoint *ev2 = vertices[tri[ti1]];
-      if (pointInInnerSegment(*vertices[vid], *ev1, *ev2, xyz)) {
+      if (genericPoint::pointInInnerSegment(*vertices[vid], *ev1, *ev2, xyz)) {
         mask |= (1 << ti0);
         mask |= (1 << ti1);
         break;
@@ -471,7 +471,7 @@ bool BSPcomplex::coplanar_constraint_innerIntersects_face(
       const genericPoint *ev2 = vertices[edge.vertices[1]];
       const genericPoint *fv1 = vertices[tri[ti0]];
       const genericPoint *fv2 = vertices[tri[ti1]];
-      if (innerSegmentsCross(*ev1, *ev2, *fv1, *fv2, xyz))
+      if (genericPoint::innerSegmentsCross(*ev1, *ev2, *fv1, *fv2, xyz))
         return true;
     }
   }
@@ -1222,7 +1222,7 @@ void BSPcomplex::fixCommonFaceOrientation(uint64_t cf_id) {
   vertices[mv[0]]->getApproxXYZCoordinates(mvc[0], mvc[1], mvc[2]);
   vertices[mv[1]]->getApproxXYZCoordinates(mvc[3], mvc[4], mvc[5]);
   vertices[mv[2]]->getApproxXYZCoordinates(mvc[6], mvc[7], mvc[8]);
-  int xyz = genericPoint::maxComponentInTriangleNormal(
+  int xyz = genericPoint::genericPoint::maxComponentInTriangleNormal(
       mvc[0], mvc[1], mvc[2], mvc[3], mvc[4], mvc[5], mvc[6], mvc[7], mvc[8]);
 
   int ori0;
