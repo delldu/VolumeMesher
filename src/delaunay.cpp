@@ -124,36 +124,6 @@ void TetMesh::init() {
     vertices[i].inc_tet = 0;
 }
 
-void TetMesh::tetrahedrize() {
-  init();
-  allocTmpStruct(num_vertices);
-
-  uint64_t ct = 0;
-  for (uint32_t i = 4; i < num_vertices; i++) {
-    ct = searchTetrahedron(ct, i);
-
-    deleteInSphereTets(ct, i);
-    tetrahedrizeHole(&ct);
-
-    uint64_t Tet2update = ct;
-    if (tet_node[Tet2update + 3] == INFINITE_VERTEX)
-      Tet2update = tet_neigh[Tet2update + 3];
-
-    vertices[i].inc_tet = Tet2update >> 2;
-  }
-
-  tet_num_vertices = num_vertices;
-
-  removeDelTets();
-  releaseTmpStruct();
-
-  mark_tetrahedra =
-      (uint32_t *)realloc(mark_tetrahedra, (tet_num) * sizeof(uint32_t));
-
-  for (uint64_t i = 0; i < tet_num; i++)
-    mark_tetrahedra[i] = 0;
-}
-
 void TetMesh::removeDelTets() {
   uint64_t j;
   for (uint64_t i = 0; i < Del_num_deleted; i++) {
@@ -199,8 +169,8 @@ uint64_t TetMesh::searchTetrahedron(uint64_t tet, const uint32_t v_id) {
       return tet;
 
     const uint64_t *Neigh = tet_neigh + tet;
-    uint64_t i = 0;
-    for (; i < 4; i++) {
+    uint64_t i;
+    for (i = 0; i < 4; i++) {
       const double *a = vertices[Node[(i + 1) & 3]].coord;
       const double *b = vertices[Node[(i & 2) ^ 3]].coord;
       const double *c = vertices[Node[(i + 3) & 2]].coord;
@@ -728,4 +698,34 @@ void TetMesh::releaseTmpStruct() {
   free(Del_buffer);
   free(Del_deleted);
   free(Del_tmp);
+}
+
+void TetMesh::tetrahedrize() {
+  init();
+  allocTmpStruct(num_vertices);
+
+  uint64_t ct = 0;
+  for (uint32_t i = 4; i < num_vertices; i++) {
+    ct = searchTetrahedron(ct, i);
+
+    deleteInSphereTets(ct, i);
+    tetrahedrizeHole(&ct);
+
+    uint64_t Tet2update = ct;
+    if (tet_node[Tet2update + 3] == INFINITE_VERTEX)
+      Tet2update = tet_neigh[Tet2update + 3];
+
+    vertices[i].inc_tet = Tet2update >> 2;
+  }
+
+  tet_num_vertices = num_vertices;
+
+  removeDelTets();
+  releaseTmpStruct();
+
+  mark_tetrahedra =
+      (uint32_t *)realloc(mark_tetrahedra, (tet_num) * sizeof(uint32_t));
+  // for (uint64_t i = 0; i < tet_num; i++)
+  //   mark_tetrahedra[i] = 0;
+  memset(mark_tetrahedra, 0, tet_num * sizeof(uint32_t));
 }

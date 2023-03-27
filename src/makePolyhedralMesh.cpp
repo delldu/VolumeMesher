@@ -94,7 +94,7 @@ void read_nodes_and_constraints(double *coords_A, uint32_t npts_A,
     const double *v2c = ((*vertices_p) + (*tri_vertices_p)[3 * i + 1])->coord;
     const double *v3c = ((*vertices_p) + (*tri_vertices_p)[3 * i + 2])->coord;
 
-    if (!misAlignment(v1c, v2c, v3c))
+    if (misAlignment(v1c, v2c, v3c) == 0)
       (*ntri)--;
     else
       i++;
@@ -160,7 +160,7 @@ void read_nodes_and_constraints_twoInput(
       const double *v1c = (*vertices_p + (*tri_vertices_p)[3 * ti])->coord;
       const double *v2c = (*vertices_p + (*tri_vertices_p)[3 * ti + 1])->coord;
       const double *v3c = (*vertices_p + (*tri_vertices_p)[3 * ti + 2])->coord;
-      if (!misAlignment(v1c, v2c, v3c)) {
+      if (misAlignment(v1c, v2c, v3c) == 0) {
         (*ntri)--;
         ntri_A--;
       } else
@@ -183,7 +183,7 @@ void read_nodes_and_constraints_twoInput(
       const double *v1c = (*vertices_p + (*tri_vertices_p)[3 * ti])->coord;
       const double *v2c = (*vertices_p + (*tri_vertices_p)[3 * ti + 1])->coord;
       const double *v3c = (*vertices_p + (*tri_vertices_p)[3 * ti + 2])->coord;
-      if (!misAlignment(v1c, v2c, v3c))
+      if (misAlignment(v1c, v2c, v3c) == 0)
         (*ntri)--;
       else
         ti++;

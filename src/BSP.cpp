@@ -7,70 +7,12 @@
 #include <time.h>
 
 #define OPPOSITE_SIGNE(a, b) (a < 0 && b > 0) || (a > 0 && b < 0)
-#define MIN_VECT_ELEM(v, n, it, i_min)                                         \
-  it = 1;                                                                      \
-  i_min = 0;                                                                   \
-  do {                                                                         \
-    if (v[it] < v[i_min])                                                      \
-      i_min = it;                                                              \
-    it++;                                                                      \
-  } while (it < n)
 #define SAME_EDGE_ENDPTS(e1, e2, E1, E2)                                       \
   ((e1 == E1 && e2 == E2) || (e1 == E2 && e2 == E1))
 #define CONSECUTIVE_EDGES(v1, v2, u1, u2)                                      \
   (v1 == u1 || v1 == u2 || v2 == u1 || v2 == u2) // assuming <u1,u2> != <v1,v2>
-#define FIND_VECT_POS(e, v, pos)                                               \
-  pos = 0;                                                                     \
-  do {                                                                         \
-    if (v[pos] == e)                                                           \
-      break;                                                                   \
-    pos++;                                                                     \
-  } while (pos < v.size()) // !! assumes e in v. !!
-#define REMOVE_ELEM_VECT(e, v) v.erase(std::find(v.begin(), v.end(), e))
 #define IS_GHOST_CELL(c) (c == UINT64_MAX)
 #define IS_GHOST_TET(t) (mesh->tet_node[4 * t + 3] == UINT32_MAX)
-
-//----------------
-// General purpose
-//----------------
-
-// Input: vector of uint64_t type elements: vect,
-//        number of elements to shift: num_shift.
-// Output: by using vect returns the original vector shifted-down (i.e.
-//         according to increasing order) of num_shift position.
-// EX. vect = {3,7,2,5,2} num_shift = 2 -> vect = {5,2,3,7,2}.
-inline void UINT64_vect_down_shift(vector<uint64_t> &vect, uint64_t num_shift) {
-  vector<uint64_t> tmp(num_shift, UINT64_MAX);
-  uint64_t shift_start_pos = vect.size() - num_shift;
-  for (uint64_t pos = 0; pos < num_shift; pos++)
-    tmp[pos] = vect[shift_start_pos + pos];
-  for (uint64_t pos = shift_start_pos - 1; pos >= 0; pos--) {
-    vect[pos + num_shift] = vect[pos];
-    if (pos == 0)
-      break; // Otherwise pos(uint64_t) becomes negative, i.e. error!!
-  }
-  for (uint64_t pos = 0; pos < num_shift; pos++)
-    vect[pos] = tmp[pos];
-}
-
-//  Input: vector of uint64_t type elements: vect,
-//        number of elements to shift: num_shift.
-// Output: by using vect returns the original vector shifted-up (i.e.
-//         according to decreasing order) of num_shift position.
-// EX. vect = {3,7,2,5,2} num_shift = 2 -> vect = {3,7,2,5,2}.
-inline void UINT64_vect_up_shift(vector<uint64_t> &vect, uint64_t num_shift) {
-  vector<uint64_t> tmp(num_shift, UINT64_MAX);
-  uint64_t pos;
-  for (pos = 0; pos < vect.size(); pos++) {
-    if (pos < num_shift)
-      tmp[pos] = vect[pos];
-    else
-      vect[pos - num_shift] = vect[pos];
-  }
-  uint64_t refill_pos = vect.size() - num_shift;
-  for (pos = 0; pos < num_shift; pos++)
-    vect[refill_pos + pos] = tmp[pos];
-}
 
 //  Input: the endpoints of two CONSECUTIVE edges u = <u0,u1>, v=<v0,v1>
 // Output: the common endpoint.
@@ -85,24 +27,9 @@ inline uint32_t consecEdges_common_endpt(uint32_t u0, uint32_t u1, uint32_t v0,
   return UINT32_MAX;
 }
 
-//  Input: the endpoints of an edge u = <u0,u1>,
-//         the common endpoint between an edge v CONSECUTIVE to u,
-//         and u itself: w.
-// Output: the endpoint of u different from v_comm.
-inline uint32_t other_edge_endpt(uint32_t u0, uint32_t u1, uint32_t w) {
-  if (w == u0)
-    return u1;
-  if (w == u1)
-    return u0;
-  // If goes here, something wrong.
-  printf("\n[BSP.cpp]other_edge_endpt_ind: ERROR no match.\n");
-  return UINT32_MAX;
-}
-
 //----------------
 // BSPedge Methods
 //----------------
-
 BSPedge BSPedge::split(uint32_t new_point) {
   BSPedge e;
   if (meshVertices[2] == UINT32_MAX) {
@@ -163,7 +90,7 @@ inline void BSPcell::removeFace(uint64_t face_pos) {
 // Note. BSPedge is attached to BSPface and viceversa.
 // Note. this function is used ONLY during the conversion from Delaunay mesh to
 //       BSPcomplex.
-inline void BSPcomplex::assigne_edge_to_face(uint64_t edge, uint64_t face) {
+inline void BSPcomplex::assign_edge_to_face(uint64_t edge, uint64_t face) {
   faces[face].edges.push_back(edge);
   // edges[edge].conn_faces.push_back(face);
   edges[edge].conn_face_0 = face;
@@ -283,12 +210,7 @@ void BSPcomplex::list_faceVertices(BSPface &face, vector<uint32_t> &face_vrts) {
   // Walk the boundary and add the endpoint != link_vrt.
   for (uint64_t e = 1; e < face.edges.size() - 1; e++) {
     BSPedge &edge = edges[face.edges[e]];
-
-    if (link_vrt == edge.vertices[0])
-      link_vrt = edge.vertices[1];
-    else
-      link_vrt = edge.vertices[0];
-
+    link_vrt = (link_vrt == edge.vertices[0])? edge.vertices[1] : edge.vertices[0];
     face_vrts[fv_ind++] = link_vrt;
   }
 }
@@ -472,8 +394,7 @@ bool BSPcomplex::coplanar_constraint_innerIntersects_face(
 
   const BSPedge &edge0 = edges[fedges.back()];
   const BSPedge &edge1 = edges[fedges[0]];
-  uint32_t vid_0 =
-      consecEdges_common_endpt(edge0.vertices[0], edge0.vertices[1],
+  uint32_t vid_0 = consecEdges_common_endpt(edge0.vertices[0], edge0.vertices[1],
                                edge1.vertices[0], edge1.vertices[1]);
 
   // 1) Cerca i tre vertici sul bordo della faccia
@@ -487,10 +408,7 @@ bool BSPcomplex::coplanar_constraint_innerIntersects_face(
     uint32_t vid = vid_0;
     for (uint64_t e = 0; e < fedges.size(); e++) {
       const BSPedge &edge = edges[fedges[e]];
-      if (vid == edge.vertices[0])
-        vid = edge.vertices[1];
-      else
-        vid = edge.vertices[0];
+      vid = (vid == edge.vertices[0])? edge.vertices[1] : edge.vertices[0];
       if (tri[i] == vid) {
         mask |= (1 << i);
         break;
@@ -506,8 +424,7 @@ bool BSPcomplex::coplanar_constraint_innerIntersects_face(
         const BSPedge &edge = edges[fedges[e]];
         const genericPoint *ev1 = vertices[edge.vertices[0]];
         const genericPoint *ev2 = vertices[edge.vertices[1]];
-        if (genericPoint::pointInInnerSegment(*vertices[tri[i]], *ev1, *ev2,
-                                              xyz)) {
+        if (pointInInnerSegment(*vertices[tri[i]], *ev1, *ev2, xyz)) {
           mask |= (1 << i);
           break;
         }
@@ -531,13 +448,10 @@ bool BSPcomplex::coplanar_constraint_innerIntersects_face(
     uint32_t vid = vid_0;
     for (uint64_t e = 0; e < fedges.size(); e++) {
       const BSPedge &edge = edges[fedges[e]];
-      if (vid == edge.vertices[0])
-        vid = edge.vertices[1];
-      else
-        vid = edge.vertices[0];
+      vid = (vid == edge.vertices[0])? edge.vertices[1] : edge.vertices[0];
       const genericPoint *ev1 = vertices[tri[ti0]];
       const genericPoint *ev2 = vertices[tri[ti1]];
-      if (genericPoint::pointInInnerSegment(*vertices[vid], *ev1, *ev2, xyz)) {
+      if (pointInInnerSegment(*vertices[vid], *ev1, *ev2, xyz)) {
         mask |= (1 << ti0);
         mask |= (1 << ti1);
         break;
@@ -558,7 +472,7 @@ bool BSPcomplex::coplanar_constraint_innerIntersects_face(
       const genericPoint *ev2 = vertices[edge.vertices[1]];
       const genericPoint *fv1 = vertices[tri[ti0]];
       const genericPoint *fv2 = vertices[tri[ti1]];
-      if (genericPoint::innerSegmentsCross(*ev1, *ev2, *fv1, *fv2, xyz))
+      if (innerSegmentsCross(*ev1, *ev2, *fv1, *fv2, xyz))
         return true;
     }
   }
@@ -804,11 +718,11 @@ BSPcomplex::BSPcomplex(const TetMesh *mesh, const Constraint *_constraints,
       face_ind = add_tetFace(v[0], v[1], v[2], cell_ind, adjCell_ind);
       // At most three edges may have to be created <v0,v1>, <v1,v2>, <v2,v0>.
       tet_edge[0] = add_tetEdge(mesh, v[0], v[1], tet_ind, new_order);
-      assigne_edge_to_face(tet_edge[0], face_ind);
+      assign_edge_to_face(tet_edge[0], face_ind);
       tet_edge[2] = add_tetEdge(mesh, v[2], v[0], tet_ind, new_order);
-      assigne_edge_to_face(tet_edge[2], face_ind);
+      assign_edge_to_face(tet_edge[2], face_ind);
       tet_edge[1] = add_tetEdge(mesh, v[1], v[2], tet_ind, new_order);
-      assigne_edge_to_face(tet_edge[1], face_ind);
+      assign_edge_to_face(tet_edge[1], face_ind);
       // Color and coplanar-constraints
       fill_face_colour(tet_ind, face_ind, map_f3, num_map_f3);
     } else {
@@ -825,11 +739,11 @@ BSPcomplex::BSPcomplex(const TetMesh *mesh, const Constraint *_constraints,
       face_ind = add_tetFace(v[3], v[0], v[1], cell_ind, adjCell_ind);
       // At most two edges may have to be created <v3,v0>, <v1,v3>.
       tet_edge[4] = add_tetEdge(mesh, v[1], v[3], tet_ind, new_order);
-      assigne_edge_to_face(tet_edge[4], face_ind);
+      assign_edge_to_face(tet_edge[4], face_ind);
       tet_edge[3] = add_tetEdge(mesh, v[3], v[0], tet_ind, new_order);
-      assigne_edge_to_face(tet_edge[3], face_ind);
+      assign_edge_to_face(tet_edge[3], face_ind);
       // <v0,v1> is tet_edge[0].
-      assigne_edge_to_face(tet_edge[0], face_ind);
+      assign_edge_to_face(tet_edge[0], face_ind);
       // Color and coplanar-constraints
       fill_face_colour(tet_ind, face_ind, map_f2, num_map_f2);
     } else {
@@ -845,10 +759,10 @@ BSPcomplex::BSPcomplex(const TetMesh *mesh, const Constraint *_constraints,
       face_ind = add_tetFace(v[2], v[3], v[0], cell_ind, adjCell_ind);
       // At most one edges may have to be created <v2,v3>.
       tet_edge[5] = add_tetEdge(mesh, v[2], v[3], tet_ind, new_order);
-      assigne_edge_to_face(tet_edge[5], face_ind);
+      assign_edge_to_face(tet_edge[5], face_ind);
       // <v3,v0> is tet_edge[3], <v0,v2> is tet_edge[2].
-      assigne_edge_to_face(tet_edge[2], face_ind);
-      assigne_edge_to_face(tet_edge[3], face_ind);
+      assign_edge_to_face(tet_edge[2], face_ind);
+      assign_edge_to_face(tet_edge[3], face_ind);
       // Color and coplanar-constraints
       fill_face_colour(tet_ind, face_ind, map_f1, num_map_f1);
     } else {
@@ -862,9 +776,9 @@ BSPcomplex::BSPcomplex(const TetMesh *mesh, const Constraint *_constraints,
       face_ind = add_tetFace(v[1], v[2], v[3], cell_ind, adjCell_ind);
       // No edges have to be created.
       // <v1,v2> is tet_edge[1], <v2,v3> is tet_edge[5], <v3,v1> is tet_edge[4].
-      assigne_edge_to_face(tet_edge[1], face_ind);
-      assigne_edge_to_face(tet_edge[5], face_ind);
-      assigne_edge_to_face(tet_edge[4], face_ind);
+      assign_edge_to_face(tet_edge[1], face_ind);
+      assign_edge_to_face(tet_edge[5], face_ind);
+      assign_edge_to_face(tet_edge[4], face_ind);
       // Color and coplanar-constraints
       fill_face_colour(tet_ind, face_ind, map_f0, num_map_f0);
     }
@@ -1115,7 +1029,6 @@ void BSPcomplex::add_edgeToOrdFaceEdges(BSPface &face, uint64_t newEdge_ind) {
     e1 = edges[edge_ind].vertices[1];
 
     if (CONSECUTIVE_EDGES(n0, n1, e0, e1)) {
-
       // Special case: edge is the first vector element
       if (e == 0) {
         BSPedge &cons = edges[face.edges.back()];
@@ -1801,161 +1714,6 @@ void BSPcomplex::splitCell(uint64_t cell_ind) {
   constraintsPartition(constr, cell_ind, newCell_ind, cell_vrts);
 }
 
-//--Complex tetrahedralization-------------------------
-
-//  Input: the index of a BSPface w.r.t. vector faces: face_ind.
-// Output: nothing.
-// Note. The last 2 edges of the vector face[face_ind].edges are used to
-//       detach a triangualr face from the face faces[face_ind].
-//       This 2 last edges are replaced in the vector face[face_ind].edges by
-//       one new edge: the one that closes the detached triangualr face.
-void BSPcomplex::triangle_detach(uint64_t face_ind) {
-  BSPface &face = faces[face_ind];
-  uint64_t num_face_edges = face.edges.size();
-
-  // A triangle will be created by using:
-  // - edges[face.edges.size()-1] and edges[face.edges.size()-2],
-  // - introducing a new_edge to close the triangle.
-  uint64_t s_01_ind = face.edges[num_face_edges - 1];
-  //  BSPedge& s_01 = edges[s_01_ind];
-  uint64_t s_12_ind = face.edges[num_face_edges - 2];
-  //  BSPedge& s_12 = edges[s_12_ind];
-  uint32_t t1 = consecEdges_common_endpt(
-      edges[s_01_ind].vertices[0], edges[s_01_ind].vertices[1],
-      edges[s_12_ind].vertices[0], edges[s_12_ind].vertices[1]);
-  uint32_t t0 = other_edge_endpt(edges[s_01_ind].vertices[0],
-                                 edges[s_01_ind].vertices[1], t1);
-  uint32_t t2 = other_edge_endpt(edges[s_12_ind].vertices[0],
-                                 edges[s_12_ind].vertices[1], t1);
-
-  // Connect t2 and t0 with a new edge.
-  edges.push_back(BSPedge());
-  uint64_t s_20_ind = edges.size() - 1;
-  BSPedge &s_20 = edges.back();
-  s_20.vertices[0] = t2;
-  s_20.vertices[1] = t0;
-  // meshVertices -> all UINT32_MAX.
-  s_20.meshVertices[0] = UINT32_MAX;
-  s_20.meshVertices[1] = UINT32_MAX;
-  s_20.meshVertices[2] = UINT32_MAX;
-  s_20.meshVertices[3] = UINT32_MAX;
-  s_20.meshVertices[4] = UINT32_MAX;
-  s_20.meshVertices[5] = UINT32_MAX;
-  // s_20.conn_faces.push_back(face_ind);
-
-  // The other conn_faces element is the new triangle that is going to be
-  // created below.
-
-  // Add an element to edge_visit
-  edge_visit.push_back(0);
-
-  // Remove triangle <t0,t1,t2> from current BSPface and save it as a new one.
-  face.edges.pop_back();
-  face.edges[face.edges.size() - 1] = s_20_ind;
-  uint64_t i = 0;
-  // REMOVE_ELEM_VECT(face_ind, edges[s_01_ind].conn_faces);
-  // REMOVE_ELEM_VECT(face_ind, edges[s_12_ind].conn_faces);
-
-  // New face-triangle is created.
-  faces.push_back(BSPface(face.meshVertices[0], face.meshVertices[1],
-                          face.meshVertices[2], face.conn_cells[0],
-                          face.conn_cells[1], face.colour));
-  uint64_t new_face_ind = faces.size() - 1;
-  BSPface &new_face = faces.back();
-  new_face.edges.push_back(s_20_ind);
-  new_face.edges.push_back(s_12_ind);
-  new_face.edges.push_back(s_01_ind);
-
-  cells[faces[face_ind].conn_cells[0]].faces.push_back(new_face_ind);
-  if (!IS_GHOST_CELL(faces[face_ind].conn_cells[1]))
-    cells[faces[face_ind].conn_cells[1]].faces.push_back(new_face_ind);
-
-  // edges[s_01_ind].conn_faces.push_back(new_face_ind);
-  // edges[s_12_ind].conn_faces.push_back(new_face_ind);
-  // s_20.conn_faces.push_back(new_face_ind);
-  edges[s_01_ind].conn_face_0 = new_face_ind;
-  edges[s_12_ind].conn_face_0 = new_face_ind;
-  s_20.conn_face_0 = new_face_ind;
-}
-
-//  Input:
-// Output:
-// Note. assumes that aligned face-edges are sub-edges of the same original
-// edge.
-bool BSPcomplex::aligned_face_edges(uint64_t fe0, uint64_t fe1,
-                                    const BSPface &face) {
-  BSPedge &edge0 = edges[face.edges[fe0]];
-  BSPedge &edge1 = edges[face.edges[fe1]];
-  if (edge0.meshVertices[0] == UINT32_MAX)
-    return false;
-  if (edge0.meshVertices[0] != edge1.meshVertices[0])
-    return false;
-  if (edge0.meshVertices[1] != edge1.meshVertices[1])
-    return false;
-  if (edge0.meshVertices[2] != edge1.meshVertices[2])
-    return false;
-  if (edge0.meshVertices[2] == UINT32_MAX)
-    return true;
-  if (edge0.meshVertices[3] != edge1.meshVertices[3])
-    return false;
-  if (edge0.meshVertices[4] != edge1.meshVertices[4])
-    return false;
-  if (edge0.meshVertices[5] != edge1.meshVertices[5])
-    return false;
-  return true;
-}
-
-//
-//
-//  Input: the index of a BSPface: face_ind.
-// Output: nothing.
-void BSPcomplex::triangulateFace(uint64_t face_ind) {
-
-  // edges indices, of BSPface faces[face_ind], are listed in the vector
-  // faces[face_ind].edges ordered as walking face-boundary clockwise
-  // (or counterclockwise).
-  BSPface &face = faces[face_ind];
-  uint64_t num_face_edges = face.edges.size();
-
-  while (num_face_edges > 3) {
-
-    // Check if last two edges are not-aligned.
-    if (!aligned_face_edges(num_face_edges - 1, num_face_edges - 2,
-                            faces[face_ind])) {
-
-      // To remove the triangle with the vertices of the last two edges
-      // one must be sure that the remaining face does not become degenerate.
-
-      if (!aligned_face_edges(0, num_face_edges - 3, faces[face_ind])) {
-
-        triangle_detach(face_ind);
-        num_face_edges--;
-      } else
-        UINT64_vect_down_shift(faces[face_ind].edges, 1);
-
-    } else
-      UINT64_vect_down_shift(faces[face_ind].edges, 1);
-  }
-}
-
-//
-//
-inline uint64_t BSPcomplex::triFace_oppEdge(const BSPface &face, uint32_t v) {
-  uint64_t edge_ind = face.edges[0];
-  uint32_t e0 = edges[edge_ind].vertices[0];
-  uint32_t e1 = edges[edge_ind].vertices[1];
-  if (e0 == v || e1 == v) {
-    edge_ind = face.edges[1];
-    e0 = edges[edge_ind].vertices[0];
-    e1 = edges[edge_ind].vertices[1];
-    if (e0 == v || e1 == v) {
-      edge_ind = face.edges[2];
-      e0 = edges[edge_ind].vertices[0];
-      e1 = edges[edge_ind].vertices[1];
-    }
-  }
-  return edge_ind;
-}
 
 //-Decide colour of GREY faces--------------------------------------------------
 int BSPcomplex::face_dominant_normal_component(const BSPface &face) {
@@ -2138,7 +1896,6 @@ uint32_t BSPcomplex::blackAB_or_white(uint64_t face_ind, bool two_input) {
         // lpt = 0.
 
         if (lpt == 2) {
-
           if (!two_input)
             return BLACK_A;
 
@@ -2169,9 +1926,7 @@ uint32_t BSPcomplex::blackAB_or_white(uint64_t face_ind, bool two_input) {
         continue;
 
       const uint32_t *constraint = constraints_verts.data() + 3 * constr;
-      if (coplanar_constraint_innerIntersects_face(face.edges, constraint,
-                                                   xyz)) {
-
+      if (coplanar_constraint_innerIntersects_face(face.edges, constraint, xyz)) {
         if (!two_input)
           return BLACK_A;
 
@@ -2193,21 +1948,11 @@ uint32_t BSPcomplex::blackAB_or_white(uint64_t face_ind, bool two_input) {
   }
 }
 
-void BSPcomplex::saveSkin(const char *filename, const char bool_opcode,
-                          bool triangulate) {
-
-  if (triangulate) {
-    const uint64_t num_faces = faces.size();
-    for (uint64_t face_ind = 0; face_ind < num_faces; face_ind++)
-      triangulateFace(face_ind);
-  }
-
+void BSPcomplex::saveSkin(const char *filename, const char bool_opcode) {
   if (bool_opcode == 'U') { // Union
     for (BSPcell &cell : cells)
       cell.place = (cell.place == INTERNAL_A || cell.place == INTERNAL_B ||
-                    cell.place == INTERNAL_AB)
-                       ? (INTERNAL_A)
-                       : (EXTERNAL);
+                    cell.place == INTERNAL_AB)? (INTERNAL_A) : (EXTERNAL);
   }
 
   else if (bool_opcode == 'I') { // Intersection
@@ -2218,8 +1963,7 @@ void BSPcomplex::saveSkin(const char *filename, const char bool_opcode,
   else if (bool_opcode == 'D') { // Difference A\B
     for (BSPcell &cell : cells)
       cell.place = (cell.place == INTERNAL_A && !(cell.place == INTERNAL_AB))
-                       ? (INTERNAL_A)
-                       : (EXTERNAL);
+                       ? (INTERNAL_A) : (EXTERNAL);
   }
 
   // Set "internal" depending on bool_opcode and find border faces to save

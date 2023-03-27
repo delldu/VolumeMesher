@@ -12,31 +12,31 @@
 
 // Take first coplanar constraint associated to this face
 // and return TRUE if the cell vertices are 'below' such constraint.
-bool isFirstConnCellBelowFace(BSPface &f, BSPcomplex *cpx) {
+bool isFirstConnCellBelowFace(BSPface &f, BSPcomplex *complex) {
   const uint32_t *cid =
-      cpx->constraints_verts.data() + f.coplanar_constraints[0] * 3;
-  const genericPoint *pv1 = cpx->vertices[cid[0]];
-  const genericPoint *pv2 = cpx->vertices[cid[1]];
-  const genericPoint *pv3 = cpx->vertices[cid[2]];
+      complex->constraints_verts.data() + f.coplanar_constraints[0] * 3;
+  const genericPoint *pv1 = complex->vertices[cid[0]];
+  const genericPoint *pv2 = complex->vertices[cid[1]];
+  const genericPoint *pv3 = complex->vertices[cid[2]];
 
-  BSPcell &cell = cpx->cells[f.conn_cells[0]];
+  BSPcell &cell = complex->cells[f.conn_cells[0]];
   uint64_t num_cellEdges = UINT64_MAX;
-  uint32_t num_cellVrts = cpx->count_cellVertices(cell, &num_cellEdges);
+  uint32_t num_cellVrts = complex->count_cellVertices(cell, &num_cellEdges);
   vector<uint32_t> cell_vrts(num_cellVrts, UINT32_MAX);
-  cpx->list_cellVertices(cell, num_cellEdges, cell_vrts);
+  complex->list_cellVertices(cell, num_cellEdges, cell_vrts);
 
   for (uint64_t ei : f.edges)
-    cpx->vrts_visit[cpx->edges[ei].vertices[0]] =
-        cpx->vrts_visit[cpx->edges[ei].vertices[1]] = 1;
+    complex->vrts_visit[complex->edges[ei].vertices[0]] =
+        complex->vrts_visit[complex->edges[ei].vertices[1]] = 1;
 
   for (uint32_t vi : cell_vrts)
-    if (!cpx->vrts_visit[vi]) {
-      const genericPoint *cv = cpx->vertices[vi];
+    if (!complex->vrts_visit[vi]) {
+      const genericPoint *cv = complex->vertices[vi];
       const int o = genericPoint::orient3D(*cv, *pv1, *pv2, *pv3);
       if (o) {
         for (uint64_t ei : f.edges)
-          cpx->vrts_visit[cpx->edges[ei].vertices[0]] =
-              cpx->vrts_visit[cpx->edges[ei].vertices[1]] = 0;
+          complex->vrts_visit[complex->edges[ei].vertices[0]] =
+              complex->vrts_visit[complex->edges[ei].vertices[1]] = 0;
         return (o > 0);
       }
     }
@@ -50,10 +50,10 @@ bool isFirstConnCellBelowFace(BSPface &f, BSPcomplex *cpx) {
    (a12) * ((a21) * (a33) - (a23) * (a31)) +                                   \
    (a13) * ((a21) * (a32) - (a22) * (a31)))
 
-double approxFaceArea(BSPface &face, BSPcomplex *cpx,
+double approxFaceArea(BSPface &face, BSPcomplex *complex,
                       const std::vector<double> &approxCoords) {
   std::vector<uint32_t> vs(face.edges.size(), 0);
-  cpx->list_faceVertices(face, vs);
+  complex->list_faceVertices(face, vs);
 
   const double *acp = approxCoords.data();
 
@@ -63,8 +63,9 @@ double approxFaceArea(BSPface &face, BSPcomplex *cpx,
   for (size_t i = 2; i < vs.size(); i++) {
     tv1 = acp + vs[i - 1] * 3;
     tv2 = acp + vs[i] * 3;
-    a += DETERMINANT3X3(tv0[0], tv0[1], tv0[2], tv1[0], tv1[1], tv1[2], tv2[0],
-                        tv2[1], tv2[2]);
+    a += DETERMINANT3X3(tv0[0], tv0[1], tv0[2], 
+                        tv1[0], tv1[1], tv1[2],
+                        tv2[0], tv2[1], tv2[2]);
   }
 
   return fabs(a);
@@ -75,11 +76,6 @@ inline bool isSkinFace(const BSPface &face, uint32_t skin_colour) {
   return face.colour & skin_colour;
 }
 
-inline void setInternalCell(BSPcell &c, uint32_t internal_label) {
-  c.place |= internal_label;
-}
-
-inline void setExternalCell(BSPcell &c) { c.place = EXTERNAL; }
 
 void BSPcomplex::markInternalCells(uint32_t skin_colour,
                                    uint32_t internal_label,
@@ -179,13 +175,13 @@ void BSPcomplex::markInternalCells(uint32_t skin_colour,
 
   for (size_t i = 0; i < cells.size(); i++)
     if (gc.whatLabel((GCoptimization::SiteID)i))
-      setInternalCell(cells[i], internal_label);
+      cells[i].place |= internal_label;
 }
 
 void BSPcomplex::constraintsSurface_complexPartition(bool two_files) {
   // Make all cells external
   for (size_t i = 0; i < cells.size(); i++)
-    setExternalCell(cells[i]);
+    cells[i].place = EXTERNAL;
 
   // Clear vrts_visit for use in isFirstConnCellBelowFace()
   for (size_t i = 0; i < vertices.size(); i++)

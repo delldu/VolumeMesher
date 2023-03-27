@@ -193,15 +193,12 @@ public:
   void saveBlackFaces(const char *filename);
 
   // Save the faces that separate in and out
-  void saveSkin(const char *filename, const char bool_opcode,
-                bool triangulate = false);
+  void saveSkin(const char *filename, const char bool_opcode);
 
   // Complex elements relations
-  inline void assigne_edge_to_face(uint64_t edge, uint64_t face);
+  inline void assign_edge_to_face(uint64_t edge, uint64_t face);
 
   // Explore the complex
-  // uint32_t getFaceVertex(const BSPface& f, uint32_t v_ind);
-  // bool faceHasVertex(const BSPface& f, uint32_t v_ind);
   uint64_t faceSharedWithCell(uint64_t c1, uint64_t c2);
   uint64_t count_cellEdges(const BSPcell &cell);
   uint32_t count_cellVertices(const BSPcell &cell, uint64_t *num_cellEdges);
@@ -289,11 +286,6 @@ public:
   void constraintsSurface_complexPartition(bool two_files = false);
   void markInternalCells(uint32_t skin_colour, uint32_t internal_label,
                          const std::vector<double> &face_costs);
-
-  // Tetrahedralization
-  void triangle_detach(uint64_t face_ind);
-  bool aligned_face_edges(uint64_t fe0, uint64_t fe1, const BSPface &face);
-  void triangulateFace(uint64_t face_ind);
 };
 
 /// <summary>

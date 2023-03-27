@@ -179,7 +179,7 @@ vrt_innerTrianglesCrosses(uint32_t triA_vrt0_ind, uint32_t triA_vrt1_ind,
   return 0;
 }
 
-uint32_t vrt_signe_orient3d(uint32_t vrt1, uint32_t vrt2, uint32_t vrt3,
+uint32_t vrt_sign_orient3d(uint32_t vrt1, uint32_t vrt2, uint32_t vrt3,
                             uint32_t vrt4, const TetMesh *mesh) {
 
   if (vrt1 == vrt2 || vrt1 == vrt3 || vrt1 == vrt4 || vrt2 == vrt3 ||
@@ -190,7 +190,7 @@ uint32_t vrt_signe_orient3d(uint32_t vrt1, uint32_t vrt2, uint32_t vrt3,
   const double *vrt2_coord = mesh->vertices[vrt2].coord;
   const double *vrt3_coord = mesh->vertices[vrt3].coord;
   const double *vrt4_coord = mesh->vertices[vrt4].coord;
-  return signe_orient3d(vrt1_coord, vrt2_coord, vrt3_coord, vrt4_coord);
+  return sign_orient3d(vrt1_coord, vrt2_coord, vrt3_coord, vrt4_coord);
 }
 
 // It is assumed that test verices and segment endpoints (that define a
@@ -219,7 +219,7 @@ static inline uint32_t vrt_same_half_plane(uint32_t test_vrt0,
 static inline uint32_t tetvrtONconstraintplane(uint32_t vrt,
                                                const uint32_t *c_vrts,
                                                const TetMesh *mesh) {
-  return (vrt_signe_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], vrt, mesh) == 0);
+  return (vrt_sign_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], vrt, mesh) == 0);
 }
 
 static inline uint32_t tetedgeONconstraintplane(const uint32_t *te_vrts,
@@ -249,8 +249,8 @@ static inline uint32_t tetfaceONconstraintplane(const uint32_t *tf_vrts,
 static inline uint32_t vrtsInSameHalfSpace(uint32_t test0, uint32_t test1,
                                            uint32_t p0, uint32_t p1,
                                            uint32_t p2, const TetMesh *mesh) {
-  return (vrt_signe_orient3d(p0, p1, p2, test0, mesh) ==
-          vrt_signe_orient3d(p0, p1, p2, test1, mesh));
+  return (vrt_sign_orient3d(p0, p1, p2, test0, mesh) ==
+          vrt_sign_orient3d(p0, p1, p2, test1, mesh));
 }
 
 //-----------------
@@ -475,32 +475,28 @@ void opposite_side_vertices(const TetMesh *mesh, uint64_t tet_ind,
     ptr[j++] = v;
 }
 
-//------------------
-// ARRAY COMPOSITION
-//------------------
-
-//  Input: array of tetrahedra indices: arrayOfTetsA,
+//  Input: array of tetrahedra indices: TetsA,
 //         numbero of elements of arrayOofTetsA: lenghtA,
-//         array of tetrahedra indices: arrayOfTetsB,
+//         array of tetrahedra indices: TetsB,
 //         numbero of elements of arrayOofTetsB: lenghtB.
-// Output: by using arrayOfTetsB returns the new array composed by the elements
-//         of arrayOfTetsB and then those of arrayOfTetsA,
+// Output: by using TetsB returns the new array composed by the elements
+//         of TetsB and then those of TetsA,
 //         by using lenghtB returns the number of elemnets in the new array.
-void enqueueTetsArray(const uint64_t *arrayOfTetsA, uint64_t lenghtA,
-                      uint64_t **arrayOfTetsB, uint64_t *lenghtB) {
-
+void enqueueTets(const uint64_t *TetsA, uint64_t lenghtA,
+                      uint64_t **TetsB, uint64_t *lenghtB) {
   if (*lenghtB == 0) {
     *lenghtB = lenghtA;
-    *arrayOfTetsB = (uint64_t *)malloc(sizeof(uint64_t) * (*lenghtB));
-    for (uint64_t j = 0; j < lenghtA; j++)
-      (*arrayOfTetsB)[j] = arrayOfTetsA[j];
+    *TetsB = (uint64_t *)malloc(sizeof(uint64_t) * (*lenghtB));
+    // for (uint64_t j = 0; j < lenghtA; j++)
+    //   (*TetsB)[j] = TetsA[j];
+    memcpy((*TetsB), TetsA, lenghtA * sizeof(uint64_t));
   } else {
     uint64_t tmp = *lenghtB;
     *lenghtB += lenghtA;
-    *arrayOfTetsB =
-        (uint64_t *)realloc(*arrayOfTetsB, sizeof(uint64_t) * (*lenghtB));
-    for (uint64_t j = 0; j < lenghtA; j++)
-      (*arrayOfTetsB)[tmp + j] = arrayOfTetsA[j];
+    *TetsB = (uint64_t *)realloc(*TetsB, sizeof(uint64_t) * (*lenghtB));
+    // for (uint64_t j = 0; j < lenghtA; j++)
+    //   (*TetsB)[tmp + j] = TetsA[j];
+    memcpy((*TetsB) + tmp, TetsA, lenghtA * sizeof(uint64_t));
   }
 }
 
@@ -601,7 +597,7 @@ void add_virtual_constraint(uint32_t he, uint32_t pos,
   uint32_t u = mesh->tet_node[4 * tet_ind];
   uint32_t k = 0;
 
-  while (vrt_signe_orient3d(u, v0, v1, v2, mesh) == 0) {
+  while (vrt_sign_orient3d(u, v0, v1, v2, mesh) == 0) {
     u = mesh->tet_node[4 * tet_ind + (++k)];
   }
 
@@ -641,7 +637,7 @@ bool tri_onSameEdge_allCoPlanar(uint32_t he0, uint32_t he1,
     v0 = constraints->tri_vertices[tri_id];
     v1 = constraints->tri_vertices[tri_id + 1];
     v2 = constraints->tri_vertices[tri_id + 2];
-    if (vrt_signe_orient3d(u, v0, v1, v2, mesh) != 0)
+    if (vrt_sign_orient3d(u, v0, v1, v2, mesh) != 0)
       return false;
   }
 
@@ -1120,16 +1116,16 @@ void find_improperIntersection(const uint32_t *constr_v, const uint64_t *tets,
 
     // tet vertices orient w.r.t. constraint-plane.
     int or_tet_v[4];
-    or_tet_v[0] = vrt_signe_orient3d(constr_v[0], constr_v[1], constr_v[2],
+    or_tet_v[0] = vrt_sign_orient3d(constr_v[0], constr_v[1], constr_v[2],
                                      tet_v[0], mesh);
-    or_tet_v[1] = vrt_signe_orient3d(constr_v[0], constr_v[1], constr_v[2],
+    or_tet_v[1] = vrt_sign_orient3d(constr_v[0], constr_v[1], constr_v[2],
                                      tet_v[1], mesh);
-    or_tet_v[2] = vrt_signe_orient3d(constr_v[0], constr_v[1], constr_v[2],
+    or_tet_v[2] = vrt_sign_orient3d(constr_v[0], constr_v[1], constr_v[2],
                                      tet_v[2], mesh);
     if (tet_v[3] == INFINITE_VERTEX)
       or_tet_v[3] = 3; // Meaningless value
     else
-      or_tet_v[3] = vrt_signe_orient3d(constr_v[0], constr_v[1], constr_v[2],
+      or_tet_v[3] = vrt_sign_orient3d(constr_v[0], constr_v[1], constr_v[2],
                                        tet_v[3], mesh);
 
     // Usefull strucutures for subsimplexs of tet.
@@ -1305,9 +1301,9 @@ uint32_t properIntersection_tetEdge_constr(const uint32_t *c_vrts,
   // for current purpopsal of the algorithm is ignored.
 
   uint32_t or_opptE0 =
-      vrt_signe_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptE_vrts[0], mesh);
+      vrt_sign_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptE_vrts[0], mesh);
   uint32_t or_opptE1 =
-      vrt_signe_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptE_vrts[1], mesh);
+      vrt_sign_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptE_vrts[1], mesh);
 
   // Co-planar tet-face case:
   // IF one of opptE_vrts (cop_opp_vrt) lie on the constraint-plane
@@ -1367,21 +1363,21 @@ uint32_t properIntersection_tetEdge_constr(const uint32_t *c_vrts,
   // Case: <tE_vrts[0],tE_vrts[1]> is aligned with <c_vrts[0], c_vrts[1]>
   if (vrt_pointInSegment(tE_vrts[0], c_vrts[0], c_vrts[1], mesh) &&
       vrt_pointInSegment(tE_vrts[1], c_vrts[0], c_vrts[1], mesh) &&
-      (-1 * or_opptE0 != vrt_signe_orient3d(c_vrts[0], c_vrts[1], opptE_vrts[0],
+      (-1 * or_opptE0 != vrt_sign_orient3d(c_vrts[0], c_vrts[1], opptE_vrts[0],
                                             opptE_vrts[1], mesh)))
     return 1;
 
   // Case: <tE_vrts[0],tE_vrts[1]> is aligned with <c_vrts[1], c_vrts[2]>
   if (vrt_pointInSegment(tE_vrts[0], c_vrts[1], c_vrts[2], mesh) &&
       vrt_pointInSegment(tE_vrts[1], c_vrts[1], c_vrts[2], mesh) &&
-      (-1 * or_opptE0 != vrt_signe_orient3d(c_vrts[1], c_vrts[2], opptE_vrts[0],
+      (-1 * or_opptE0 != vrt_sign_orient3d(c_vrts[1], c_vrts[2], opptE_vrts[0],
                                             opptE_vrts[1], mesh)))
     return 1;
 
   // Case: <tE_vrts[0],tE_vrts[1]> is aligned with <c_vrts[2], c_vrts[0]>
   if (vrt_pointInSegment(tE_vrts[0], c_vrts[2], c_vrts[0], mesh) &&
       vrt_pointInSegment(tE_vrts[1], c_vrts[2], c_vrts[0], mesh) &&
-      (-1 * or_opptE0 != vrt_signe_orient3d(c_vrts[2], c_vrts[0], opptE_vrts[0],
+      (-1 * or_opptE0 != vrt_sign_orient3d(c_vrts[2], c_vrts[0], opptE_vrts[0],
                                             opptE_vrts[1], mesh)))
     return 1;
 
@@ -1418,11 +1414,11 @@ uint32_t properIntersection_tetVrt_constr(const uint32_t *c_vrts, uint32_t tV,
     return 1;
 
   uint32_t or_opptF0 =
-      vrt_signe_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptF_vrts[0], mesh);
+      vrt_sign_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptF_vrts[0], mesh);
   uint32_t or_opptF1 =
-      vrt_signe_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptF_vrts[1], mesh);
+      vrt_sign_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptF_vrts[1], mesh);
   uint32_t or_opptF2 =
-      vrt_signe_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptF_vrts[2], mesh);
+      vrt_sign_orient3d(c_vrts[0], c_vrts[1], c_vrts[2], opptF_vrts[2], mesh);
 
   // Co-planar tet-faces:
   // Since constraint cannot have vertices inside the co-planar tet-face
@@ -1798,7 +1794,6 @@ uint64_t *intersections_TetVrtOnConstraintSide(
   uint64_t tet_ind;
   uint32_t v_oppf_inds[3]; // Indices of the vertices of
                            // the face opposite to v_curr.
-
   for (uint64_t i = 0; i < num_incTet; i++) {
     tet_ind = incTet[i];
     // Fill v_oppf_inds[0,1,2].
@@ -1807,7 +1802,6 @@ uint64_t *intersections_TetVrtOnConstraintSide(
     // Check if the case (3'):
     // one of the vertices of the face opposite to v_curr is v_stop.
     if (arrayUINT32_contains_elem(v_oppf_inds, 3, v_stop)) {
-
       fill_connecting_vrts(connecting_vrts, 1, v_stop, UINT32_MAX, UINT32_MAX);
       break;
     }
@@ -1818,7 +1812,6 @@ uint64_t *intersections_TetVrtOnConstraintSide(
     if (vrt_innerSegmentCrossesInnerTriangle(v_curr, v_stop, v_oppf_inds[0],
                                              v_oppf_inds[1], v_oppf_inds[2],
                                              mesh)) {
-
       fill_connecting_vrts(connecting_vrts, 3, v_oppf_inds[0], v_oppf_inds[1],
                            v_oppf_inds[2]);
       break;
@@ -1831,7 +1824,6 @@ uint64_t *intersections_TetVrtOnConstraintSide(
     // Edge < v_oppf_inds[0] , v_oppf_inds[1] >
     if (vrt_innerSegmentsCross(v_curr, v_stop, v_oppf_inds[0], v_oppf_inds[1],
                                mesh)) {
-
       fill_connecting_vrts(connecting_vrts, 2, v_oppf_inds[0], v_oppf_inds[1],
                            UINT32_MAX);
       break;
@@ -1840,7 +1832,6 @@ uint64_t *intersections_TetVrtOnConstraintSide(
     // Edge < v_oppf_inds[1] , v_oppf_inds[2] >
     if (vrt_innerSegmentsCross(v_curr, v_stop, v_oppf_inds[1], v_oppf_inds[2],
                                mesh)) {
-
       fill_connecting_vrts(connecting_vrts, 2, v_oppf_inds[1], v_oppf_inds[2],
                            UINT32_MAX);
       break;
@@ -1849,7 +1840,6 @@ uint64_t *intersections_TetVrtOnConstraintSide(
     // Edge < v_oppf_inds[2] , v_oppf_inds[0] >
     if (vrt_innerSegmentsCross(v_curr, v_stop, v_oppf_inds[2], v_oppf_inds[0],
                                mesh)) {
-
       fill_connecting_vrts(connecting_vrts, 2, v_oppf_inds[2], v_oppf_inds[0],
                            UINT32_MAX);
       break;
@@ -1860,7 +1850,6 @@ uint64_t *intersections_TetVrtOnConstraintSide(
 
     // Vertex v_oppf_inds[0]
     if (vrt_pointInInnerSegment(v_oppf_inds[0], v_curr, v_stop, mesh)) {
-
       fill_connecting_vrts(connecting_vrts, 1, v_oppf_inds[0], UINT32_MAX,
                            UINT32_MAX);
       break;
@@ -1868,7 +1857,6 @@ uint64_t *intersections_TetVrtOnConstraintSide(
 
     // Vertex v_oppf_inds[1]
     if (vrt_pointInInnerSegment(v_oppf_inds[1], v_curr, v_stop, mesh)) {
-
       fill_connecting_vrts(connecting_vrts, 1, v_oppf_inds[1], UINT32_MAX,
                            UINT32_MAX);
       break;
@@ -1883,7 +1871,6 @@ uint64_t *intersections_TetVrtOnConstraintSide(
     }
 
     // Case (0): intersects only v_curr -> visit the incTet[i+1]
-
   } // END Cycle over the tetrahedra incident in v_curr
 
   // Returns the number of new tetrahedra intersecated.
@@ -1894,7 +1881,6 @@ uint64_t *intersections_TetVrtOnConstraintSide(
   *nextTet_ind = tet_ind;
 
   free(incTet);
-  incTet = NULL;
   return newTetIn_incTet;
 }
 
@@ -2281,9 +2267,9 @@ uint32_t tet_intersects_triInterior(uint64_t tet_ind, const uint32_t *c,
   uint32_t num_t_in_c = 0;
   extract_tetVrts(t, tet_ind, mesh);
 
-  or_t_WRT_c[0] = vrt_signe_orient3d(t[0], c[0], c[1], c[2], mesh);
-  or_t_WRT_c[1] = vrt_signe_orient3d(t[1], c[0], c[1], c[2], mesh);
-  or_t_WRT_c[2] = vrt_signe_orient3d(t[2], c[0], c[1], c[2], mesh);
+  or_t_WRT_c[0] = vrt_sign_orient3d(t[0], c[0], c[1], c[2], mesh);
+  or_t_WRT_c[1] = vrt_sign_orient3d(t[1], c[0], c[1], c[2], mesh);
+  or_t_WRT_c[2] = vrt_sign_orient3d(t[2], c[0], c[1], c[2], mesh);
 
   t_in_c[0] = (or_t_WRT_c[0] == 0 &&
                vrt_pointInInnerTriangle(t[0], c[0], c[1], c[2], mesh));
@@ -2303,7 +2289,7 @@ uint32_t tet_intersects_triInterior(uint64_t tet_ind, const uint32_t *c,
     return 0;
   }
 
-  or_t_WRT_c[3] = vrt_signe_orient3d(t[3], c[0], c[1], c[2], mesh);
+  or_t_WRT_c[3] = vrt_sign_orient3d(t[3], c[0], c[1], c[2], mesh);
   t_in_c[3] = (or_t_WRT_c[3] == 0 &&
                vrt_pointInInnerTriangle(t[3], c[0], c[1], c[2], mesh));
   num_t_in_c += t_in_c[3];
@@ -2458,10 +2444,8 @@ void intersections_constraint_sides(TetMesh *mesh,
         mesh, v_start, v_stop, other_constr_vrt, mark_TetIntersection,
         connecting_vrts, &nextTet_ind, &num_found_tet);
 
-    enqueueTetsArray(found_tet, num_found_tet, intersecatedTet,
-                     num_intersecatedTet);
+    enqueueTets(found_tet, num_found_tet, intersecatedTet, num_intersecatedTet);
     free(found_tet);
-    found_tet = NULL;
 
     //----------------
     // CONTINUE-phase: continue travelling along constraint side searching
@@ -2514,10 +2498,8 @@ void intersections_constraint_sides(TetMesh *mesh,
       }
 
       if (num_found_tet > 0) {
-        enqueueTetsArray(found_tet, num_found_tet, intersecatedTet,
-                         num_intersecatedTet);
+        enqueueTets(found_tet, num_found_tet, intersecatedTet, num_intersecatedTet);
         free(found_tet);
-        found_tet = NULL;
       }
     }
 
@@ -2712,7 +2694,6 @@ void intersections_constraint_interior(TetMesh *mesh,
                                         mark_TetIntersection);
 
     if (num > 1) {
-
       uint64_t *interiorConstrInterct_tet =
           (uint64_t *)malloc(sizeof(uint64_t) * num);
       // RecursiveFun-call:
@@ -2721,10 +2702,8 @@ void intersections_constraint_interior(TetMesh *mesh,
       constrInterior_save(mesh, adjIN_tet, mark_TetIntersection, &pos,
                           interiorConstrInterct_tet);
 
-      enqueueTetsArray(interiorConstrInterct_tet, num, intersecatedTet,
-                       num_intersecatedTet);
+      enqueueTets(interiorConstrInterct_tet, num, intersecatedTet, num_intersecatedTet);
       free(interiorConstrInterct_tet);
-      interiorConstrInterct_tet = NULL;
     } else {
       if (mark_TetIntersection[adjIN_tet] == IMPROPER_INTERSECTION_COUNTED)
         mark_TetIntersection[adjIN_tet] = IMPROPER_INTERSECTION;
@@ -2739,13 +2718,11 @@ void intersections_constraint_interior(TetMesh *mesh,
       else
         mark_TetIntersection[adjIN_tet] = INTERSECTION;
 
-      enqueueTetsArray(&adjIN_tet, 1, intersecatedTet, num_intersecatedTet);
+      enqueueTets(&adjIN_tet, 1, intersecatedTet, num_intersecatedTet);
     }
   }
 }
 
-//
-//
 static inline void compile_map_innerInt(uint32_t tri_ind, uint64_t tet_ind,
                                         uint32_t *num_map, uint32_t **map) {
   num_map[tet_ind]++; // Number of intersections increases for the tetrahedron.
@@ -2759,8 +2736,6 @@ static inline void compile_map_innerInt(uint32_t tri_ind, uint64_t tet_ind,
   map[tet_ind][num_map[tet_ind] - 1] = tri_ind;
 }
 
-//  Input:
-// Output:
 static inline void compile_map_fi(uint32_t tri_ind, uint64_t tet_ind,
                                   uint32_t *num_map_fi, uint32_t **map_fi) {
 
@@ -2777,8 +2752,6 @@ static inline void compile_map_fi(uint32_t tri_ind, uint64_t tet_ind,
   map_fi[tet_ind][num_map_fi[tet_ind] - 1] = tri_ind;
 }
 
-//  Input:
-// Output:
 static inline void
 compile_tetfFaces_map(uint32_t tri_ind, uint64_t tet_face_ind,
                       uint32_t *num_map_f0, uint32_t **map_f0,
@@ -2887,12 +2860,10 @@ void insert_constraints(TetMesh *mesh, Constraint *constraints,
   // - faces (2D)overlapping with constraints, wherever its the face opposite
   //   to vertex j=0,1,2 or 3...
   //      -> marked as OVERLAP2D_Fj
-  uint32_t *mark_TetIntersection =
-      (uint32_t *)calloc(mesh->tet_num, sizeof(uint32_t));
+  uint32_t *mark_TetIntersection = (uint32_t *)calloc(mesh->tet_num, sizeof(uint32_t));
 
   // Search interections on each constraint.
   for (uint32_t tri_ind = 0; tri_ind < constraints->num_triangles; tri_ind++) {
-
     uint32_t v[3]; // vertices of the constraint-triangle.
     uint32_t tri_ID = 3 * tri_ind;
     v[0] = constraints->tri_vertices[tri_ID];

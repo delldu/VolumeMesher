@@ -23,12 +23,12 @@ static inline uint32_t same_point(const double *p, const double *q) {
 // Signe-version of basic predicates
 //-----------------------------------
 
-static inline int signe_orient2d(const double *p, const double *q,
+static inline int sign_orient2d(const double *p, const double *q,
                                  const double *r) {
   return orient2d(p[0], p[1], q[0], q[1], r[0], r[1]);
 }
 
-static inline int signe_orient3d(const double *p, const double *q,
+static inline int sign_orient3d(const double *p, const double *q,
                                  const double *r, const double *s) {
   return orient3d(p[0], p[1], p[2], q[0], q[1], q[2], r[0], r[1], r[2], s[0],
                   s[1], s[2]);
@@ -38,8 +38,7 @@ bool misAlignment(const double *p, const double *q, const double *r);
 
 uint32_t same_half_plane(const double *p, const double *q, const double *v1,
                          const double *v2);
-uint32_t pointInInnerSegment(const double *p, const double *v1,
-                             const double *v2);
+uint32_t pointInInnerSegment(const double *p, const double *v1, const double *v2);
 uint32_t pointInSegment(const double *p, const double *v1, const double *v2);
 uint32_t innerSegmentsCross(const double *u1, const double *u2,
                             const double *v1, const double *v2);

@@ -50,8 +50,7 @@ uint32_t pointInInnerSegment(const double *p, const double *v1,
 // Output: 1 -> if the point p belong to the segment v1-v2 (endpoints included),
 //         0 -> otherwise.
 uint32_t pointInSegment(const double *p, const double *v1, const double *v2) {
-  return (same_point(p, v1) || same_point(p, v2) ||
-          pointInInnerSegment(p, v1, v2));
+  return (same_point(p, v1) || same_point(p, v2) || pointInInnerSegment(p, v1, v2));
 }
 
 //  Input: point p, point q, and a segment v1-v2, througt their coordinates:
@@ -63,12 +62,11 @@ uint32_t pointInSegment(const double *p, const double *v1, const double *v2) {
 uint32_t same_half_plane(const double *p, const double *q, const double *v1,
                          const double *v2) {
   // Projection on (x,y)-plane
-  if (signe_orient2d(p, v1, v2) != signe_orient2d(q, v1, v2))
+  if (sign_orient2d(p, v1, v2) != sign_orient2d(q, v1, v2))
     return 0;
 
   // Projection on (y,z)-plane
-  if (signe_orient2d(p + 1, v1 + 1, v2 + 1) !=
-      signe_orient2d(q + 1, v1 + 1, v2 + 1))
+  if (sign_orient2d(p + 1, v1 + 1, v2 + 1) != sign_orient2d(q + 1, v1 + 1, v2 + 1))
     return 0;
 
   // Projection on (x,z)-plane
@@ -76,7 +74,7 @@ uint32_t same_half_plane(const double *p, const double *q, const double *v1,
   const double qxz[] = {q[0], q[2]};
   const double v1xz[] = {v1[0], v1[2]};
   const double v2xz[] = {v2[0], v2[2]};
-  return (signe_orient2d(pxz, v1xz, v2xz) == signe_orient2d(qxz, v1xz, v2xz));
+  return (sign_orient2d(pxz, v1xz, v2xz) == sign_orient2d(qxz, v1xz, v2xz));
 }
 
 //  Input: segments u1-u2 and v1-v2 through their coordinates:
@@ -105,34 +103,26 @@ uint32_t innerSegmentsCross(const double *u1, const double *u2,
     return 0;
 
   // Each segment endpoint cannot be aligned with the other segment.
-  if (!misAlignment(u1, v1, v2))
-    return 0;
-  if (!misAlignment(u2, v1, v2))
-    return 0;
-  if (!misAlignment(v1, u1, u2))
-    return 0;
-  if (!misAlignment(v2, u1, u2))
+  if (misAlignment(u1, v1, v2) == 0 || misAlignment(u2, v1, v2) == 0 ||
+      misAlignment(v1, u1, u2) == 0 || misAlignment(v2, u1, u2) == 0)
     return 0;
 
   // If the segment projected on one coordinate plane cross -> segmant cross.
   // Projection on (x,y)-plane
-  if (orient2d(u1, u2, v1) != 0.)
+  if (orient2d(u1, u2, v1) != 0. || orient2d(v1, v2, u2) != 0.)
     return 1;
-  if (orient2d(v1, v2, u2) != 0.)
-    return 1;
+
   // Projection on (y,z)-plane
-  if (orient2d(u1 + 1, u2 + 1, v1 + 1) != 0.)
+  if (orient2d(u1 + 1, u2 + 1, v1 + 1) != 0. || orient2d(v1 + 1, v2 + 1, u2 + 1) != 0.)
     return 1;
-  if (orient2d(v1 + 1, v2 + 1, u2 + 1) != 0.)
-    return 1;
+
   // Projection on (z,x)-plane
   const double u1xz[] = {u1[0], u1[2]};
   const double u2xz[] = {u2[0], u2[2]};
   const double v1xz[] = {v1[0], v1[2]};
   const double v2xz[] = {v2[0], v2[2]};
-  if (orient2d(u1xz, u2xz, v1xz) != 0.)
-    return 1;
-  if (orient2d(v1xz, v2xz, u2xz) != 0.)
+
+  if (orient2d(u1xz, u2xz, v1xz) != 0. || orient2d(v1xz, v2xz, u2xz) != 0.)
     return 1;
 
   return 0;
@@ -146,20 +136,17 @@ uint32_t innerSegmentsCross(const double *u1, const double *u2,
 //         0 -> otherwise.
 uint32_t pointInInnerTriangle(const double *p, const double *v1,
                               const double *v2, const double *v3) {
-
   double o1, o2, oo2, oo4, oo6;
 
   // Projection on (x,y)-plane -> p VS v1
-  o1 = signe_orient2d(p, v2, v3);
-  o2 = signe_orient2d(v1, v2, v3);
-  oo2 = o2;
+  o1 = sign_orient2d(p, v2, v3);
+  oo2 = o2 = sign_orient2d(v1, v2, v3);
   if (o1 != o2)
     return 0;
 
   // Projection on (y,z)-plane -> p VS v1
-  o1 = signe_orient2d(p + 1, v2 + 1, v3 + 1);
-  o2 = signe_orient2d(v1 + 1, v2 + 1, v3 + 1);
-  oo4 = o2;
+  o1 = sign_orient2d(p + 1, v2 + 1, v3 + 1);
+  oo4 = o2 = sign_orient2d(v1 + 1, v2 + 1, v3 + 1);
   if (o1 != o2)
     return 0;
 
@@ -168,46 +155,39 @@ uint32_t pointInInnerTriangle(const double *p, const double *v1,
   const double v1xz[] = {v1[0], v1[2]};
   const double v2xz[] = {v2[0], v2[2]};
   const double v3xz[] = {v3[0], v3[2]};
-  o1 = signe_orient2d(pxz, v2xz, v3xz);
-  o2 = signe_orient2d(v1xz, v2xz, v3xz);
-  oo6 = o2;
+  o1 = sign_orient2d(pxz, v2xz, v3xz);
+  oo6 = o2 = sign_orient2d(v1xz, v2xz, v3xz);
   if (o1 != o2)
     return 0;
 
   // Projection on (x,y)-plane -> p VS v2
-  o1 = signe_orient2d(p, v3, v1);
-  o2 = oo2;
-  if (o1 != o2)
+  o1 = sign_orient2d(p, v3, v1);
+  if (o1 != oo2)
     return 0;
 
   // Projection on (y,z)-plane -> p VS v2
-  o1 = signe_orient2d(p + 1, v3 + 1, v1 + 1);
-  o2 = oo4;
-  if (o1 != o2)
+  o1 = sign_orient2d(p + 1, v3 + 1, v1 + 1);
+  if (o1 != oo4)
     return 0;
 
   // Projection on (x,z)-plane -> p VS v2
-  o1 = signe_orient2d(pxz, v3xz, v1xz);
-  o2 = oo6;
-  if (o1 != o2)
+  o1 = sign_orient2d(pxz, v3xz, v1xz);
+  if (o1 != oo6)
     return 0;
 
   // Projection on (x,y)-plane -> p VS v3
-  o1 = signe_orient2d(p, v1, v2);
-  o2 = oo2;
-  if (o1 != o2)
+  o1 = sign_orient2d(p, v1, v2);
+  if (o1 != oo2)
     return 0;
 
   // Projection on (y,z)-plane -> p VS v3
-  o1 = signe_orient2d(p + 1, v1 + 1, v2 + 1);
-  o2 = oo4;
-  if (o1 != o2)
+  o1 = sign_orient2d(p + 1, v1 + 1, v2 + 1);
+  if (o1 != oo4)
     return 0;
 
   // Projection on (x,z)-plane -> p VS v3
-  o1 = signe_orient2d(pxz, v1xz, v2xz);
-  o2 = oo6;
-  if (o1 != o2)
+  o1 = sign_orient2d(pxz, v1xz, v2xz);
+  if (o1 != oo6)
     return 0;
 
   return 1;
@@ -235,7 +215,6 @@ uint32_t pointInTriangle(const double *p, const double *v1, const double *v2,
 uint32_t innerSegmentCrossesInnerTriangle(const double *u1, const double *u2,
                                           const double *v1, const double *v2,
                                           const double *v3) {
-
   // "out of the Box" check.
   double bound;
   bound = std::min(u1[0], u2[0]); // min(u1,u2) alogng x-axis
@@ -257,8 +236,8 @@ uint32_t innerSegmentCrossesInnerTriangle(const double *u1, const double *u2,
   if (v1[2] >= bound && v2[2] >= bound && v3[2] >= bound)
     return 0;
 
-  const int orient_u1_tri = signe_orient3d(u1, v1, v2, v3);
-  const int orient_u2_tri = signe_orient3d(u2, v1, v2, v3);
+  const int orient_u1_tri = sign_orient3d(u1, v1, v2, v3);
+  const int orient_u2_tri = sign_orient3d(u2, v1, v2, v3);
 
   // Check if triangle vertices and at least one of the segment endpoints are
   // coplanar: in this case there is no proper intersection.
@@ -274,15 +253,15 @@ uint32_t innerSegmentCrossesInnerTriangle(const double *u1, const double *u2,
 
   // Intersection between segment and triangle sides are not proper.
   // Check also if segment intersect the triangle-plane outside the triangle.
-  const int orient_u_v1v2 = signe_orient3d(u1, u2, v1, v2);
-  const int orient_u_v2v3 = signe_orient3d(u1, u2, v2, v3);
+  const int orient_u_v1v2 = sign_orient3d(u1, u2, v1, v2);
+  const int orient_u_v2v3 = sign_orient3d(u1, u2, v2, v3);
 
   if (orient_u_v1v2 == 0 || orient_u_v2v3 == 0)
     return 0;
   if (orient_u_v1v2 != orient_u_v2v3)
     return 0;
 
-  const int orient_u_v3v1 = signe_orient3d(u1, u2, v3, v1);
+  const int orient_u_v3v1 = sign_orient3d(u1, u2, v3, v1);
 
   if (orient_u_v3v1 == 0)
     return 0;
@@ -302,11 +281,14 @@ uint32_t innerSegmentCrossesInnerTriangle(const double *u1, const double *u2,
 uint32_t innerSegmentCrossesTriangle(const double *u1, const double *u2,
                                      const double *v1, const double *v2,
                                      const double *v3) {
-  if (pointInInnerSegment(v1, u1, u2) || pointInInnerSegment(v2, u1, u2) ||
-      pointInInnerSegment(v3, u1, u2) || innerSegmentsCross(v2, v3, u1, u2) ||
+  if (pointInInnerSegment(v1, u1, u2) ||
+      pointInInnerSegment(v2, u1, u2) ||
+      pointInInnerSegment(v3, u1, u2) ||
+      innerSegmentsCross(v2, v3, u1, u2) ||
       innerSegmentsCross(v3, v1, u1, u2) ||
       innerSegmentsCross(v1, v2, u1, u2) ||
       innerSegmentCrossesInnerTriangle(u1, u2, v1, v2, v3))
     return 1;
+  
   return 0;
 }
